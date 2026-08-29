@@ -29,6 +29,8 @@ export default function RegisterPage() {
         setError("Ky email është regjistruar tashmë");
       } else if (err instanceof ApiError && err.status === 400) {
         setError("Fjalëkalimi duhet të ketë të paktën 8 karaktere");
+      } else if (err instanceof ApiError && err.status === 429) {
+        setError("Shumë tentativa — provo përsëri pas pak minutash");
       } else {
         setError("Diçka shkoi keq");
       }

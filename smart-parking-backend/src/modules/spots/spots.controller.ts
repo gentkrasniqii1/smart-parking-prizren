@@ -19,6 +19,8 @@ import { FindSpotsQueryDto } from './dto/find-spots-query.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import type { RequestUser } from '../auth/types/request-user.type.js';
 
 @Controller('spots')
 export class SpotsController {
@@ -37,22 +39,29 @@ export class SpotsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post()
-  create(@Body() dto: CreateSpotDto) {
-    return this.spotsService.create(dto);
+  create(@CurrentUser() user: RequestUser, @Body() dto: CreateSpotDto) {
+    return this.spotsService.create(dto, user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateSpotDto) {
-    return this.spotsService.update(id, dto);
+  update(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateSpotDto,
+  ) {
+    return this.spotsService.update(id, dto, user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.spotsService.remove(id);
+  remove(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.spotsService.remove(id, user.userId);
   }
 }

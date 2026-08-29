@@ -6,6 +6,7 @@ import {
 import { Prisma, SpotStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { ZonesService } from '../zones/zones.service.js';
+import { AuditLogService } from '../audit-log/audit-log.service.js';
 import { CreateSpotDto } from './dto/create-spot.dto.js';
 import { UpdateSpotDto } from './dto/update-spot.dto.js';
 import { GeoPointDto } from '../../common/dto/geo-point.dto.js';
@@ -39,6 +40,7 @@ export class SpotsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly zonesService: ZonesService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async findAll(zoneId?: string): Promise<SpotWithGeometry[]> {
@@ -76,7 +78,10 @@ export class SpotsService {
     return this.toSpot(row);
   }
 
-  async create(dto: CreateSpotDto): Promise<SpotWithGeometry> {
+  async create(
+    dto: CreateSpotDto,
+    actorId?: string,
+  ): Promise<SpotWithGeometry> {
     await this.zonesService.findOne(dto.zoneId);
 
     try {
@@ -93,13 +98,28 @@ export class SpotsService {
         )
         RETURNING ${SPOT_COLUMNS}
       `;
-      return this.toSpot(rows[0]);
+      const spot = this.toSpot(rows[0]);
+      if (actorId) {
+        await this.auditLogService.record('spot.create', actorId, {
+          spotId: spot.id,
+          code: spot.code,
+          zoneId: spot.zoneId,
+        });
+      }
+      return spot;
     } catch (error) {
       throw this.mapWriteError(error, dto.zoneId, dto.code);
     }
   }
 
-  async update(id: string, dto: UpdateSpotDto): Promise<SpotWithGeometry> {
+  // `actorId` opsional: Sensor Simulator (Faza 3) dhe check-in/check-out
+  // (Faza 4) e ndryshojnë statusin pa audit — nuk janë veprim admini, dhe
+  // SensorEvent tashmë e regjistron atë aktivitet veç e veç.
+  async update(
+    id: string,
+    dto: UpdateSpotDto,
+    actorId?: string,
+  ): Promise<SpotWithGeometry> {
     const existing = await this.findOne(id);
     if (dto.zoneId) {
       await this.zonesService.findOne(dto.zoneId);
@@ -123,18 +143,33 @@ export class SpotsService {
         WHERE id = ${id}
         RETURNING ${SPOT_COLUMNS}
       `;
-      return this.toSpot(rows[0]);
+      const spot = this.toSpot(rows[0]);
+      if (actorId) {
+        await this.auditLogService.record('spot.update', actorId, {
+          spotId: spot.id,
+          code: spot.code,
+          status: spot.status,
+        });
+      }
+      return spot;
     } catch (error) {
       throw this.mapWriteError(error, zoneId, code);
     }
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, actorId?: string): Promise<void> {
+    const existing = await this.findOne(id);
     const affected = await this.prisma.$executeRaw`
       DELETE FROM parking_spots WHERE id = ${id}
     `;
     if (affected === 0) {
       throw new NotFoundException(`Spoti ${id} nuk ekziston`);
+    }
+    if (actorId) {
+      await this.auditLogService.record('spot.delete', actorId, {
+        spotId: id,
+        code: existing.code,
+      });
     }
   }
 

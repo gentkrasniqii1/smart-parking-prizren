@@ -23,8 +23,10 @@ export function useCreateSpot() {
       location: GeoPoint;
       status?: SpotStatus;
     }) => createSpot(data),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["spots"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["spots"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "auditLogs"] });
+    },
   });
 }
 
@@ -33,8 +35,10 @@ export function useUpdateSpotStatus() {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: SpotStatus }) =>
       updateSpotStatus(id, status),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["spots"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["spots"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "auditLogs"] });
+    },
   });
 }
 
@@ -42,7 +46,9 @@ export function useDeleteSpot() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteSpot,
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["spots"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["spots"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "auditLogs"] });
+    },
   });
 }

@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { User } from '@prisma/client';
 import { UsersService } from '../users/users.service.js';
+import { AuditLogService } from '../audit-log/audit-log.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { TokenPair } from './types/token-pair.type.js';
@@ -20,6 +21,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ user: User; tokens: TokenPair }> {
@@ -36,12 +38,18 @@ export class AuthService {
       passwordHash,
     });
     const tokens = await this.issueTokens(user.id, user.email, user.role);
+    await this.auditLogService.record('auth.register', user.id, {
+      email: user.email,
+    });
     return { user, tokens };
   }
 
   async login(dto: LoginDto): Promise<{ user: User; tokens: TokenPair }> {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
+      await this.auditLogService.record('auth.login_failed', null, {
+        email: dto.email,
+      });
       throw new UnauthorizedException('Kredenciale të pasakta');
     }
 
@@ -50,10 +58,16 @@ export class AuthService {
       user.passwordHash,
     );
     if (!passwordMatches) {
+      await this.auditLogService.record('auth.login_failed', user.id, {
+        email: dto.email,
+      });
       throw new UnauthorizedException('Kredenciale të pasakta');
     }
 
     const tokens = await this.issueTokens(user.id, user.email, user.role);
+    await this.auditLogService.record('auth.login', user.id, {
+      email: user.email,
+    });
     return { user, tokens };
   }
 

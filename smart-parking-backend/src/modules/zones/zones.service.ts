@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { AuditLogService } from '../audit-log/audit-log.service.js';
 import { CreateZoneDto } from './dto/create-zone.dto.js';
 import { UpdateZoneDto } from './dto/update-zone.dto.js';
 import { GeoPolygonDto } from '../../common/dto/geo-polygon.dto.js';
@@ -25,7 +26,10 @@ const ZONE_COLUMNS = Prisma.sql`id, name, ST_AsGeoJSON(polygon) AS polygon, "cre
 
 @Injectable()
 export class ZonesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   async findAll(): Promise<ZoneWithGeometry[]> {
     const rows = await this.prisma.$queryRaw<ZoneRow[]>`
@@ -45,7 +49,7 @@ export class ZonesService {
     return this.toZone(row);
   }
 
-  async create(dto: CreateZoneDto): Promise<ZoneWithGeometry> {
+  async create(dto: CreateZoneDto, actorId: string): Promise<ZoneWithGeometry> {
     const rows = await this.prisma.$queryRaw<ZoneRow[]>`
       INSERT INTO parking_zones (id, name, polygon, "createdAt", "updatedAt")
       VALUES (
@@ -57,10 +61,19 @@ export class ZonesService {
       )
       RETURNING ${ZONE_COLUMNS}
     `;
-    return this.toZone(rows[0]);
+    const zone = this.toZone(rows[0]);
+    await this.auditLogService.record('zone.create', actorId, {
+      zoneId: zone.id,
+      name: zone.name,
+    });
+    return zone;
   }
 
-  async update(id: string, dto: UpdateZoneDto): Promise<ZoneWithGeometry> {
+  async update(
+    id: string,
+    dto: UpdateZoneDto,
+    actorId: string,
+  ): Promise<ZoneWithGeometry> {
     const existing = await this.findOne(id);
     const name = dto.name ?? existing.name;
     const polygonFragment = dto.polygon
@@ -73,16 +86,26 @@ export class ZonesService {
       WHERE id = ${id}
       RETURNING ${ZONE_COLUMNS}
     `;
-    return this.toZone(rows[0]);
+    const zone = this.toZone(rows[0]);
+    await this.auditLogService.record('zone.update', actorId, {
+      zoneId: zone.id,
+      name: zone.name,
+    });
+    return zone;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, actorId: string): Promise<void> {
+    const existing = await this.findOne(id);
     const affected = await this.prisma.$executeRaw`
       DELETE FROM parking_zones WHERE id = ${id}
     `;
     if (affected === 0) {
       throw new NotFoundException(`Zona ${id} nuk ekziston`);
     }
+    await this.auditLogService.record('zone.delete', actorId, {
+      zoneId: id,
+      name: existing.name,
+    });
   }
 
   private toZone(row: ZoneRow): ZoneWithGeometry {

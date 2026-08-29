@@ -102,3 +102,12 @@ export interface Notification {
   read: boolean;
   createdAt: string;
 }
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  actorId: string | null;
+  actorEmail: string | null;
+  metadata: Record<string, unknown> | null;
+  timestamp: string;
+}

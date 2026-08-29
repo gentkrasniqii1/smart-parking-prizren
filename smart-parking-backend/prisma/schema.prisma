@@ -9,9 +9,6 @@ datasource db {
   extensions = [postgis]
 }
 
-// Modeli (AuditLog) shtohet fazë pas faze — shih CLAUDE.md, seksioni
-// "Roadmap".
-
 enum Role {
   citizen
   attendant
@@ -27,6 +24,7 @@ model User {
   sessions           ParkingSession[]
   reservations       Reservation[]
   notifications      Notification[]
+  auditLogs          AuditLog[]
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
@@ -159,4 +157,22 @@ model Notification {
 
   @@index([userId])
   @@map("notifications")
+}
+
+// Regjistron veprime të ndjeshme (hyrje/regjistrim, CRUD admin mbi
+// zona/spote) për llogaridhënie dhe monitorim sigurie (Faza 8). `actorId`
+// opsional: hyrjet e dështuara s'kanë përdorues të vërtetuar ende — email-i
+// i provuar ruhet te `metadata` në atë rast. `metadata` mban kontekst fleksibël
+// (p.sh. { zoneId, name }) pa shumëzuar kolona nullable për çdo lloj veprimi.
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@map("audit_logs")
 }

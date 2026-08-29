@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { ZonesPanel } from "./zones-panel";
 import { SpotsPanel } from "./spots-panel";
+import { AuditLogPanel } from "./audit-log-panel";
 import type { SpotStatus } from "@/lib/types";
 
 const STATUS_LABELS: Record<SpotStatus, string> = {
@@ -78,6 +79,7 @@ export default function AdminDashboardPage() {
 
       <ZonesPanel />
       <SpotsPanel />
+      <AuditLogPanel />
     </main>
   );
 }

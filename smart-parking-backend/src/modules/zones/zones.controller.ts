@@ -17,6 +17,8 @@ import { UpdateZoneDto } from './dto/update-zone.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import type { RequestUser } from '../auth/types/request-user.type.js';
 
 @Controller('zones')
 export class ZonesController {
@@ -35,22 +37,29 @@ export class ZonesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post()
-  create(@Body() dto: CreateZoneDto) {
-    return this.zonesService.create(dto);
+  create(@CurrentUser() user: RequestUser, @Body() dto: CreateZoneDto) {
+    return this.zonesService.create(dto, user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateZoneDto) {
-    return this.zonesService.update(id, dto);
+  update(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateZoneDto,
+  ) {
+    return this.zonesService.update(id, dto, user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.zonesService.remove(id);
+  remove(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.zonesService.remove(id, user.userId);
   }
 }

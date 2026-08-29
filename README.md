@@ -79,7 +79,8 @@ Frontend runs at `http://localhost:3000`, backend API at `http://localhost:3001`
 - [x] Faza 5 — Rezervimet
 - [x] Faza 6 — Admin dashboard
 - [x] Faza 7 — Njoftimet (live, via WebSocket)
-- [ ] Faza 8-13 — Audit logs, analitika, polish, testim, deploy
+- [x] Faza 8 — Audit logs + rate-limiting/anti-abuse
+- [ ] Faza 9-13 — Analitika, polish, testim, deploy
 
 ## Live Demo
 

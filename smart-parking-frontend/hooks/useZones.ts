@@ -21,8 +21,10 @@ export function useCreateZone() {
   return useMutation({
     mutationFn: ({ name, polygon }: { name: string; polygon: GeoPolygon }) =>
       createZone(name, polygon),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["zones"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["zones"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "auditLogs"] });
+    },
   });
 }
 
@@ -31,8 +33,10 @@ export function useUpdateZoneName() {
   return useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) =>
       updateZoneName(id, name),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["zones"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["zones"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "auditLogs"] });
+    },
   });
 }
 
@@ -40,7 +44,9 @@ export function useDeleteZone() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteZone,
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["zones"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["zones"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "auditLogs"] });
+    },
   });
 }

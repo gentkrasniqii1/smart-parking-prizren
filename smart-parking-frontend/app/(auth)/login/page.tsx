@@ -25,11 +25,13 @@ export default function LoginPage() {
       setSession(user, tokens);
       router.push("/");
     } catch (err) {
-      setError(
-        err instanceof ApiError && err.status === 401
-          ? "Email ose fjalëkalim i pasaktë"
-          : "Diçka shkoi keq",
-      );
+      if (err instanceof ApiError && err.status === 401) {
+        setError("Email ose fjalëkalim i pasaktë");
+      } else if (err instanceof ApiError && err.status === 429) {
+        setError("Shumë tentativa — provo përsëri pas pak minutash");
+      } else {
+        setError("Diçka shkoi keq");
+      }
     } finally {
       setIsSubmitting(false);
     }

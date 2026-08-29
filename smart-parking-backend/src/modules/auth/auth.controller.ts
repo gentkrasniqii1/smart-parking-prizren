@@ -14,6 +14,7 @@ import { LoginDto } from './dto/login.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { JwtRefreshGuard } from '../../common/guards/jwt-refresh.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { RateLimit } from '../../common/decorators/rate-limit.decorator.js';
 import type {
   RequestUser,
   RequestUserWithRefreshToken,
@@ -28,12 +29,14 @@ export class AuthController {
     private readonly usersService: UsersService,
   ) {}
 
+  @RateLimit({ limit: 5, windowSec: 60 })
   @Post('register')
   async register(@Body() dto: RegisterDto) {
     const { user, tokens } = await this.authService.register(dto);
     return { user: toSafeUser(user), ...tokens };
   }
 
+  @RateLimit({ limit: 5, windowSec: 60 })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto) {

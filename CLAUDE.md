@@ -29,7 +29,7 @@ Platformë real-time për parkim inteligjent në Prizren — projekti #2 i porto
 - Deploy (fazë e mëvonshme): frontend → Vercel; backend+redis+postgres → Railway/Render
 
 ## 3. Modeli i të dhënave (draft — shtohet fazë pas faze te `smart-parking-backend/prisma/schema.prisma`)
-- **User** (id, email, fjalëkalim, roli: citizen | attendant | admin) — Faza 1
+- **User** (id, email, passwordHash, role: citizen | attendant | admin, hashedRefreshToken, createdAt, updatedAt) — ✅ Faza 1
 - **ParkingZone** (emri, poligoni gjeografik — PostGIS) — Faza 2
 - **ParkingSpot** (kodi, koordinata — PostGIS point, zonaId, statusi: free | occupied | reserved | disabled) — Faza 2
 - **ParkingSession** (spotId, userId?, checkIn, checkOut, burimi: sensor | manual | qr) — Faza 3–4
@@ -63,12 +63,16 @@ smart-parking-prizren/
 │
 ├── smart-parking-backend/
 │   ├── src/
-│   │   ├── modules/{auth,users,zones,spots,sessions,reservations,realtime,sensor-simulator,notifications,audit-log}/
-│   │   ├── common/{guards,decorators,filters,pipes}/
+│   │   ├── modules/
+│   │   │   ├── auth/ ✅ (controller, service, dto, strategies, types)
+│   │   │   ├── users/ ✅ (service, mapper)
+│   │   │   └── {zones,spots,sessions,reservations,realtime,sensor-simulator,notifications,audit-log}/ (bosh, fazë e mëvonshme)
+│   │   ├── common/{guards,decorators}/ ✅ (JwtAuthGuard, JwtRefreshGuard, RolesGuard, @Roles(), @CurrentUser())
+│   │   ├── common/{filters,pipes}/ (bosh)
 │   │   ├── config/
 │   │   ├── prisma/{prisma.module.ts,prisma.service.ts}
-│   │   ├── app.module.ts, main.ts
-│   │   └── prisma/schema.prisma (datasource+generator; modelet shtohen fazë pas faze)
+│   │   ├── app.module.ts, main.ts (ValidationPipe global + CORS)
+│   │   └── prisma/schema.prisma (User + enum Role; modelet e tjera shtohen fazë pas faze)
 │   └── Dockerfile
 │
 ├── docker-compose.yml
@@ -78,7 +82,7 @@ smart-parking-prizren/
 
 ## 6. Roadmap me faza (kërko aprovim para se të kalosh në fazën tjetër)
 - [x] **Faza 0:** Konfirmim arkitekture + scaffold i dy projekteve + Docker Compose + CLAUDE.md
-- [ ] **Faza 1:** Auth (JWT + refresh + RBAC) + modeli i User
+- [x] **Faza 1:** Auth (JWT + refresh + RBAC) + modeli i User
 - [ ] **Faza 2:** Zones & Spots CRUD + PostGIS + harta bazë (statike)
 - [ ] **Faza 3:** WebSocket Gateway + Redis pub/sub + sensor simulator → harta bëhet live
 - [ ] **Faza 4:** Check-in/check-out manual (QR/buton)
@@ -105,3 +109,5 @@ smart-parking-prizren/
 - **2026-08-29** — Prisma i fiksuar në `^6.x` (jo latest/v7+). Shih arsyetimin te seksioni 2.
 - **2026-08-29** — Backend i skaffoldur me Nest CLI më të fundit → vjen me `vitest` (jo jest) dhe `oxlint` (jo eslint) si default; mbajtur si janë, s'ka arsye teknike për t'i ndryshuar.
 - **2026-08-29** — Harta: zgjedhur **MapLibre GL + react-map-gl** (jo Leaflet) — vektor-based, performancë më e mirë për shumë markera live-update.
+- **2026-08-29** — Porti i host-it për Postgres në `docker-compose.yml` ndryshuar në `5433` (nga default 5432), konfigurueshëm via `POSTGRES_PORT`. Arsye: konteneri `prizren-postgres` i projektit "Prizren Smart City" e zë 5432 në këtë makinë; brenda rrjetit të docker-it backend-i vazhdon të lidhet te `postgres:5432` (pa ndryshim).
+- **2026-08-29** — Faza 1 (Auth): `User` model + enum `Role` në Prisma; migrimi `20260829013937_add_user_model` u aplikua (me konfirmim eksplicit të Gent-it, pasi Prisma vetë e bllokoi `migrate reset` si veprim të rrezikshëm nga një agjent AI). `AuthModule` përdor `PassportModule.register({ defaultStrategy: 'jwt' })` (jo `PassportModule` bosh) — pa `.register()`, `AuthModuleOptions` s'ofrohet fare si provider dhe `JwtRefreshGuard`/`JwtAuthGuard` dështojnë në DI edhe pse parametri është `@Optional()`. Refresh token ruhet i hash-uar (bcrypt) te `User.hashedRefreshToken`, rrotullohet në çdo `/auth/refresh`, dhe pastrohet në `/auth/logout` (revokim i menjëhershëm). Testuar end-to-end me curl: register/login/me/refresh/logout/revocation — të gjitha OK.

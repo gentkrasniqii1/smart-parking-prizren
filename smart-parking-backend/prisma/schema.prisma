@@ -9,6 +9,24 @@ datasource db {
   extensions = [postgis]
 }
 
-// Modelet (User, ParkingZone, ParkingSpot, ParkingSession, Reservation,
+// Modelet (ParkingZone, ParkingSpot, ParkingSession, Reservation,
 // SensorEvent, Notification, AuditLog) shtohen fazë pas faze — shih
-// CLAUDE.md, seksioni "Roadmap". Faza 1 fillon me modelin User.
+// CLAUDE.md, seksioni "Roadmap".
+
+enum Role {
+  citizen
+  attendant
+  admin
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  passwordHash       String
+  role               Role     @default(citizen)
+  hashedRefreshToken String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("users")
+}

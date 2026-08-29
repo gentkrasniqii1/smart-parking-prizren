@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  NotificationType,
   ParkingSession,
   ReservationStatus,
   SessionSource,
@@ -12,6 +13,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { RedisService } from '../../redis/redis.service.js';
 import { SPOT_STATUS_CHANNEL } from '../../redis/redis-channels.js';
 import { SpotsService, SpotWithGeometry } from '../spots/spots.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { CheckInDto } from './dto/check-in.dto.js';
 
 export interface ActiveSession {
@@ -25,6 +27,7 @@ export class SessionsService {
     private readonly prisma: PrismaService,
     private readonly spotsService: SpotsService,
     private readonly redisService: RedisService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async checkIn(userId: string, dto: CheckInDto): Promise<ParkingSession> {
@@ -79,7 +82,12 @@ export class SessionsService {
       });
     });
 
-    await this.publishSpotUpdate(dto.spotId);
+    const spot = await this.publishSpotUpdate(dto.spotId);
+    await this.notificationsService.create(
+      userId,
+      NotificationType.checkin,
+      `Ke bërë check-in te spoti ${spot.code}`,
+    );
     return session;
   }
 
@@ -103,7 +111,12 @@ export class SessionsService {
       });
     });
 
-    await this.publishSpotUpdate(session.spotId);
+    const spot = await this.publishSpotUpdate(session.spotId);
+    await this.notificationsService.create(
+      userId,
+      NotificationType.checkout,
+      `Dole nga spoti ${spot.code}`,
+    );
     return session;
   }
 
@@ -118,8 +131,9 @@ export class SessionsService {
     return { session, spot };
   }
 
-  private async publishSpotUpdate(spotId: string): Promise<void> {
+  private async publishSpotUpdate(spotId: string): Promise<SpotWithGeometry> {
     const updatedSpot = await this.spotsService.findOne(spotId);
     await this.redisService.publish(SPOT_STATUS_CHANNEL, updatedSpot);
+    return updatedSpot;
   }
 }

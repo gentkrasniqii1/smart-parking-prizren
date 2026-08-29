@@ -5,9 +5,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Reservation, ReservationStatus, SpotStatus } from '@prisma/client';
+import {
+  NotificationType,
+  Reservation,
+  ReservationStatus,
+  SpotStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { SpotsService } from '../spots/spots.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { CreateReservationDto } from './dto/create-reservation.dto.js';
 
 export interface UpcomingWindow {
@@ -21,6 +27,7 @@ export class ReservationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly spotsService: SpotsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(
@@ -61,9 +68,17 @@ export class ReservationsService {
       );
     }
 
-    return this.prisma.reservation.create({
+    const reservation = await this.prisma.reservation.create({
       data: { spotId: dto.spotId, userId, startTime, endTime },
     });
+
+    await this.notificationsService.create(
+      userId,
+      NotificationType.reservation_confirmed,
+      `Rezervimi u konfirmua për spotin ${spot.code} (${startTime.toLocaleString('sq-AL')})`,
+    );
+
+    return reservation;
   }
 
   findMine(userId: string): Promise<Reservation[]> {
@@ -87,10 +102,19 @@ export class ReservationsService {
       return reservation;
     }
 
-    return this.prisma.reservation.update({
+    const cancelled = await this.prisma.reservation.update({
       where: { id },
       data: { status: ReservationStatus.cancelled },
     });
+
+    const spot = await this.spotsService.findOne(reservation.spotId);
+    await this.notificationsService.create(
+      userId,
+      NotificationType.reservation_cancelled,
+      `Rezervimi për spotin ${spot.code} u anulua`,
+    );
+
+    return cancelled;
   }
 
   findUpcomingForSpot(spotId: string): Promise<UpcomingWindow[]> {

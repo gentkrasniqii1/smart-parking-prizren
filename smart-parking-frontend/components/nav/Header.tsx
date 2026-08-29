@@ -4,12 +4,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { logout as apiLogout } from "@/lib/auth";
+import { getSocket } from "@/lib/socket";
+import {
+  useUnreadCount,
+  useNotificationsSocket,
+} from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.clearSession);
+  const isLoggedIn = !!user;
+
+  const unreadCountQuery = useUnreadCount(isLoggedIn);
+  useNotificationsSocket(isLoggedIn);
 
   async function handleLogout() {
     try {
@@ -17,6 +26,7 @@ export function Header() {
     } catch {
       // token-i mund të jetë skaduar tashmë; s'ka rëndësi, po e pastrojmë gjithsesi
     }
+    getSocket().disconnect();
     clearSession();
     router.push("/");
   }
@@ -29,6 +39,9 @@ export function Header() {
 
       {user ? (
         <div className="flex items-center gap-3 text-sm">
+          <Link href="/notifications" className="underline">
+            🔔{unreadCountQuery.data ? ` ${unreadCountQuery.data}` : ""}
+          </Link>
           <Link href="/reservations" className="underline">
             Rezervimet e mia
           </Link>

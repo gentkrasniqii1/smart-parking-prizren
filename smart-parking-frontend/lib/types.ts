@@ -86,3 +86,19 @@ export interface AdminStats {
   activeSessions: number;
   activeReservations: number;
 }
+
+export type NotificationType =
+  | "checkin"
+  | "checkout"
+  | "reservation_confirmed"
+  | "reservation_cancelled"
+  | "reservation_reminder";
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}

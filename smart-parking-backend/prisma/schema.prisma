@@ -9,8 +9,8 @@ datasource db {
   extensions = [postgis]
 }
 
-// Modelet (Notification, AuditLog) shtohen fazë pas faze — shih CLAUDE.md,
-// seksioni "Roadmap".
+// Modeli (AuditLog) shtohet fazë pas faze — shih CLAUDE.md, seksioni
+// "Roadmap".
 
 enum Role {
   citizen
@@ -26,6 +26,7 @@ model User {
   hashedRefreshToken String?
   sessions           ParkingSession[]
   reservations       Reservation[]
+  notifications      Notification[]
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
@@ -120,18 +121,42 @@ enum ReservationStatus {
 // vetme me kohën reale është te SessionsService.checkIn, që refuzon
 // check-in nëse spoti ka rezervim aktiv (tani) të një përdoruesi tjetër.
 model Reservation {
-  id        String            @id @default(uuid())
-  spotId    String
-  spot      ParkingSpot       @relation(fields: [spotId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  startTime DateTime
-  endTime   DateTime
-  status    ReservationStatus @default(confirmed)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id           String            @id @default(uuid())
+  spotId       String
+  spot         ParkingSpot       @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startTime    DateTime
+  endTime      DateTime
+  status       ReservationStatus @default(confirmed)
+  // E vendos NotificationsService.checkReminders (Faza 7) kur dërgon
+  // kujtesën "fillon së shpejti" — mbron nga dërgimi i përsëritur.
+  reminderSent Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@index([spotId])
   @@index([userId])
   @@map("reservations")
+}
+
+enum NotificationType {
+  checkin
+  checkout
+  reservation_confirmed
+  reservation_cancelled
+  reservation_reminder
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  message   String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@map("notifications")
 }

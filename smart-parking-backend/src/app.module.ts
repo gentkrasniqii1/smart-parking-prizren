@@ -15,6 +15,7 @@ import { SensorSimulatorModule } from './modules/sensor-simulator/sensor-simulat
 import { SessionsModule } from './modules/sessions/sessions.module.js';
 import { ReservationsModule } from './modules/reservations/reservations.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AdminModule } from './modules/admin/admin.module.js';
     SpotsModule,
     RealtimeModule,
     SensorSimulatorModule,
+    NotificationsModule,
     SessionsModule,
     ReservationsModule,
     AdminModule,

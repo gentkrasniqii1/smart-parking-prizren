@@ -11,6 +11,7 @@ Real-time smart parking platform for the city of Prizren, Kosovo. Live spot avai
 - 🅿️ **Reservations** — book a spot in advance with conflict validation
 - 📱 **Citizen check-in** — QR-code / manual check-in as a live data source alongside simulated sensors
 - 🛠️ **Admin dashboard** — manage zones, spots, and view occupancy analytics
+- 🔔 **Live notifications** — check-in/out, reservation confirmations, and 15-min-before reminders pushed over the same authenticated WebSocket
 - 🔐 **Role-based access** — citizen / attendant / admin, JWT auth with refresh tokens
 
 ## Tech Stack
@@ -77,7 +78,8 @@ Frontend runs at `http://localhost:3000`, backend API at `http://localhost:3001`
 - [x] Faza 4 — Check-in manual (QR)
 - [x] Faza 5 — Rezervimet
 - [x] Faza 6 — Admin dashboard
-- [ ] Faza 7-13 — Njoftimet, audit logs, analitika, testim, deploy
+- [x] Faza 7 — Njoftimet (live, via WebSocket)
+- [ ] Faza 8-13 — Audit logs, analitika, polish, testim, deploy
 
 ## Live Demo
 

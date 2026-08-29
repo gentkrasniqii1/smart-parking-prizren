@@ -60,7 +60,9 @@ export function useParkingSocket(
       for (const zoneId of zoneIds) {
         socket.emit("zone:leave", { zoneId });
       }
-      socket.disconnect();
+      // Mos e shkëput socket-in këtu: është i ndarë me
+      // useNotificationsSocket (Faza 7) dhe duhet të mbetet i lidhur sa kohë
+      // përdoruesi është i kyçur, jo vetëm sa kohë je në një faqe zone.
     };
   }, [zoneIds, queryClient]);
 }

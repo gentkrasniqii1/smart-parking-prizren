@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: smart-parking-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-parking}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-parking}
+      POSTGRES_DB: ${POSTGRES_DB:-smart_parking}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-parking}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: smart-parking-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./smart-parking-backend
+      dockerfile: Dockerfile
+    container_name: smart-parking-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-parking}:${POSTGRES_PASSWORD:-parking}@postgres:5432/${POSTGRES_DB:-smart_parking}?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-changeme_access}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-changeme_refresh}
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./smart-parking-backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ./smart-parking-frontend
+      dockerfile: Dockerfile
+    container_name: smart-parking-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_WS_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./smart-parking-frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  postgres_data:
+  redis_data:

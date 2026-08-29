@@ -1,0 +1,14 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+// Modelet (User, ParkingZone, ParkingSpot, ParkingSession, Reservation,
+// SensorEvent, Notification, AuditLog) shtohen fazë pas faze — shih
+// CLAUDE.md, seksioni "Roadmap". Faza 1 fillon me modelin User.

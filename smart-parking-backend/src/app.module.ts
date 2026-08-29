@@ -14,6 +14,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module.js';
 import { SensorSimulatorModule } from './modules/sensor-simulator/sensor-simulator.module.js';
 import { SessionsModule } from './modules/sessions/sessions.module.js';
 import { ReservationsModule } from './modules/reservations/reservations.module.js';
+import { AdminModule } from './modules/admin/admin.module.js';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ReservationsModule } from './modules/reservations/reservations.module.j
     SensorSimulatorModule,
     SessionsModule,
     ReservationsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

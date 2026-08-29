@@ -32,6 +32,11 @@ export function Header() {
           <Link href="/reservations" className="underline">
             Rezervimet e mia
           </Link>
+          {user.role === "admin" && (
+            <Link href="/admin" className="underline">
+              Paneli admin
+            </Link>
+          )}
           <span className="text-muted-foreground">{user.email}</span>
           <Button variant="outline" size="sm" onClick={handleLogout}>
             Dil

@@ -78,3 +78,11 @@ export interface ReservationWindow {
   startTime: string;
   endTime: string;
 }
+
+export interface AdminStats {
+  totalZones: number;
+  totalSpots: number;
+  spotsByStatus: Record<SpotStatus, number>;
+  activeSessions: number;
+  activeReservations: number;
+}

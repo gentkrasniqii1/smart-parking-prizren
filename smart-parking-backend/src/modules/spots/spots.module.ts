@@ -7,5 +7,6 @@ import { ZonesModule } from '../zones/zones.module.js';
   imports: [ZonesModule],
   controllers: [SpotsController],
   providers: [SpotsService],
+  exports: [SpotsService],
 })
 export class SpotsModule {}

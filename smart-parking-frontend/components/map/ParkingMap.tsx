@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Map,
+  Map as MapGL,
   Source,
   Layer,
   Popup,
   type MapLayerMouseEvent,
+  type MapRef,
 } from "react-map-gl/maplibre";
 import type { FeatureCollection, Point, Polygon } from "geojson";
 import type { LngLatBoundsLike, StyleSpecification } from "maplibre-gl";
@@ -14,6 +15,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { Spot, SpotStatus, Zone } from "@/lib/types";
 
 const PRIZREN_CENTER = { longitude: 20.7397, latitude: 42.2139 };
+const FLASH_DURATION_MS = 1200;
 
 // Stil bosh, pa varësi rrjeti (pa kërkesa tile/sprite/glyph) — parashikueshëm
 // dhe i lehtë. Zëvendësohet me një provider real (MapTiler, OSM raster,
@@ -70,6 +72,7 @@ function spotsToFeatureCollection(
     type: "FeatureCollection",
     features: spots.map((spot) => ({
       type: "Feature",
+      id: spot.id,
       geometry: spot.location,
       properties: { id: spot.id, code: spot.code, status: spot.status },
     })),
@@ -115,10 +118,64 @@ export function ParkingMap({
   height = "600px",
 }: ParkingMapProps) {
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
+  const mapRef = useRef<MapRef>(null);
+  const prevStatusRef = useRef<Map<string, SpotStatus>>(new Map());
+  const flashTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
 
   const zonesData = useMemo(() => zonesToFeatureCollection(zones), [zones]);
   const spotsData = useMemo(() => spotsToFeatureCollection(spots), [spots]);
   const bounds = useMemo(() => computeBounds(zones, spots), [zones, spots]);
+
+  // Animacion i vogël ("flash") kur një spot ndryshon status live — kërkesë
+  // e §4 (CLAUDE.md): harta përditësohet pa refresh me animacion të dukshëm.
+  useEffect(() => {
+    const prevStatus = prevStatusRef.current;
+    const map = mapRef.current;
+
+    for (const spot of spots) {
+      const previous = prevStatus.get(spot.id);
+      if (previous && previous !== spot.status && map) {
+        const existingTimeout = flashTimeoutsRef.current.get(spot.id);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+        }
+        try {
+          map.setFeatureState(
+            { source: "spots", id: spot.id },
+            { flash: true },
+          );
+        } catch {
+          // burimi mund të mos jetë ende gati; anashkalo në heshtje
+        }
+        flashTimeoutsRef.current.set(
+          spot.id,
+          setTimeout(() => {
+            try {
+              map.setFeatureState(
+                { source: "spots", id: spot.id },
+                { flash: false },
+              );
+            } catch {
+              // harta mund të jetë shkëputur ndërkohë
+            }
+            flashTimeoutsRef.current.delete(spot.id);
+          }, FLASH_DURATION_MS),
+        );
+      }
+      prevStatus.set(spot.id, spot.status);
+    }
+  }, [spots]);
+
+  useEffect(() => {
+    const timeouts = flashTimeoutsRef.current;
+    return () => {
+      for (const timeout of timeouts.values()) {
+        clearTimeout(timeout);
+      }
+    };
+  }, []);
 
   function handleClick(event: MapLayerMouseEvent) {
     const feature = event.features?.[0];
@@ -135,7 +192,8 @@ export function ParkingMap({
       style={{ height, width: "100%" }}
       className="relative overflow-hidden rounded-lg border"
     >
-      <Map
+      <MapGL
+        ref={mapRef}
         initialViewState={
           bounds
             ? { bounds, fitBoundsOptions: { padding: 48 } }
@@ -167,8 +225,19 @@ export function ParkingMap({
             id="spots-circle"
             type="circle"
             paint={{
-              "circle-radius": 7,
-              "circle-stroke-width": 2,
+              "circle-radius": [
+                "case",
+                ["boolean", ["feature-state", "flash"], false],
+                12,
+                7,
+              ],
+              "circle-radius-transition": { duration: 300, delay: 0 },
+              "circle-stroke-width": [
+                "case",
+                ["boolean", ["feature-state", "flash"], false],
+                4,
+                2,
+              ],
               "circle-stroke-color": "#ffffff",
               "circle-color": [
                 "match",
@@ -201,7 +270,7 @@ export function ParkingMap({
             </div>
           </Popup>
         )}
-      </Map>
+      </MapGL>
       <StatusLegend />
     </div>
   );

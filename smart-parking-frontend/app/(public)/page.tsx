@@ -1,20 +1,28 @@
 "use client";
 
+import { useMemo } from "react";
 import { ParkingMap } from "@/components/map/ParkingMap";
 import { useZones } from "@/hooks/useZones";
 import { useSpots } from "@/hooks/useSpots";
+import { useParkingSocket } from "@/hooks/useParkingSocket";
 
 export default function PublicMapPage() {
   const zonesQuery = useZones();
   const spotsQuery = useSpots();
+
+  const zoneIds = useMemo(
+    () => (zonesQuery.data ?? []).map((zone) => zone.id),
+    [zonesQuery.data],
+  );
+  useParkingSocket(zoneIds);
 
   return (
     <main className="flex min-h-screen flex-col gap-4 p-4 md:p-8">
       <div>
         <h1 className="text-2xl font-semibold">Smart Parking Prizren</h1>
         <p className="text-muted-foreground">
-          Zonat dhe vendparkimet e Prizrenit. Statuset tregohen ende në mënyrë
-          statike — përditësimi live vjen në Fazën 3.
+          Zonat dhe vendparkimet e Prizrenit — statuset përditësohen në kohë
+          reale.
         </p>
       </div>
 

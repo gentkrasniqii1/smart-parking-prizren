@@ -1,8 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import { ParkingMap } from "@/components/map/ParkingMap";
 import { useZone } from "@/hooks/useZones";
 import { useSpots } from "@/hooks/useSpots";
+import { useParkingSocket } from "@/hooks/useParkingSocket";
 import type { SpotStatus } from "@/lib/types";
 
 const STATUS_LABELS: Record<SpotStatus, string> = {
@@ -12,9 +14,14 @@ const STATUS_LABELS: Record<SpotStatus, string> = {
   disabled: "Jashtë funksionit",
 };
 
+const ZONE_IDS_EMPTY: string[] = [];
+
 export function ZoneDetailClient({ zoneId }: { zoneId: string }) {
   const zoneQuery = useZone(zoneId);
   const spotsQuery = useSpots(zoneId);
+
+  const zoneIds = useMemo(() => [zoneId], [zoneId]);
+  useParkingSocket(zoneQuery.data ? zoneIds : ZONE_IDS_EMPTY);
 
   if (zoneQuery.isLoading || spotsQuery.isLoading) {
     return <p className="text-muted-foreground">Duke ngarkuar zonën...</p>;

@@ -52,6 +52,16 @@ export class SpotsService {
     return rows.map((row) => this.toSpot(row));
   }
 
+  async findRandomTogglable(count: number): Promise<SpotWithGeometry[]> {
+    const rows = await this.prisma.$queryRaw<SpotRow[]>`
+      SELECT ${SPOT_COLUMNS} FROM parking_spots
+      WHERE status IN ('free', 'occupied')
+      ORDER BY random()
+      LIMIT ${count}
+    `;
+    return rows.map((row) => this.toSpot(row));
+  }
+
   async findOne(id: string): Promise<SpotWithGeometry> {
     const rows = await this.prisma.$queryRaw<SpotRow[]>`
       SELECT ${SPOT_COLUMNS} FROM parking_spots WHERE id = ${id}

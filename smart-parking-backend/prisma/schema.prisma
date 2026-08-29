@@ -9,8 +9,8 @@ datasource db {
   extensions = [postgis]
 }
 
-// Modelet (ParkingSession, Reservation, SensorEvent, Notification,
-// AuditLog) shtohen fazë pas faze — shih CLAUDE.md, seksioni "Roadmap".
+// Modelet (ParkingSession, Reservation, Notification, AuditLog) shtohen
+// fazë pas faze — shih CLAUDE.md, seksioni "Roadmap".
 
 enum Role {
   citizen
@@ -52,16 +52,30 @@ model ParkingZone {
 }
 
 model ParkingSpot {
-  id        String                               @id @default(uuid())
-  code      String
-  location  Unsupported("geometry(Point, 4326)")
-  status    SpotStatus                           @default(free)
-  zoneId    String
-  zone      ParkingZone                          @relation(fields: [zoneId], references: [id], onDelete: Cascade)
-  createdAt DateTime                             @default(now())
-  updatedAt DateTime                             @updatedAt
+  id           String                               @id @default(uuid())
+  code         String
+  location     Unsupported("geometry(Point, 4326)")
+  status       SpotStatus                           @default(free)
+  zoneId       String
+  zone         ParkingZone                          @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  sensorEvents SensorEvent[]
+  createdAt    DateTime                             @default(now())
+  updatedAt    DateTime                             @updatedAt
 
   @@unique([zoneId, code])
   @@index([zoneId])
   @@map("parking_spots")
+}
+
+// Regjistër i leximeve të simuluara nga "sensor simulator"-i (Faza 3) —
+// bazë për analitikën e avancuar (heatmap/orët e pikut) në Fazën 9.
+model SensorEvent {
+  id        String      @id @default(uuid())
+  spotId    String
+  spot      ParkingSpot @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  status    SpotStatus
+  timestamp DateTime    @default(now())
+
+  @@index([spotId])
+  @@map("sensor_events")
 }

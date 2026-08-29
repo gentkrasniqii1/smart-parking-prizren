@@ -10,6 +10,7 @@ import {
 } from "@/hooks/useSpots";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Spot, SpotStatus, Zone } from "@/lib/types";
 
 const STATUS_OPTIONS: SpotStatus[] = [
@@ -54,15 +55,23 @@ export function SpotsPanel() {
         />
       )}
 
-      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-        {(spotsQuery.data ?? []).map((spot) => (
-          <SpotRow
-            key={spot.id}
-            spot={spot}
-            zoneName={zoneNameById.get(spot.zoneId) ?? "?"}
-          />
-        ))}
-      </ul>
+      {spotsQuery.isLoading ? (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-[78px] w-full" />
+          ))}
+        </div>
+      ) : (
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+          {(spotsQuery.data ?? []).map((spot) => (
+            <SpotRow
+              key={spot.id}
+              spot={spot}
+              zoneName={zoneNameById.get(spot.zoneId) ?? "?"}
+            />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

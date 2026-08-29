@@ -7,6 +7,7 @@ import {
 } from "@/hooks/useReservations";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Reservation } from "@/lib/types";
 
 function formatRange(res: Reservation): string {
@@ -39,7 +40,11 @@ export default function ReservationsPage() {
       <h1 className="text-2xl font-semibold">Rezervimet e mia</h1>
 
       {reservationsQuery.isLoading ? (
-        <p className="text-muted-foreground">Duke ngarkuar...</p>
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
       ) : !reservationsQuery.data || reservationsQuery.data.length === 0 ? (
         <p className="text-muted-foreground">S&apos;ke asnjë rezervim ende.</p>
       ) : (

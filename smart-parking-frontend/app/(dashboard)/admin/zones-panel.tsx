@@ -10,6 +10,7 @@ import {
 import { useSpots } from "@/hooks/useSpots";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Zone } from "@/lib/types";
 
 export function ZonesPanel() {
@@ -36,15 +37,23 @@ export function ZonesPanel() {
 
       {showCreate && <CreateZoneForm onDone={() => setShowCreate(false)} />}
 
-      <ul className="flex flex-col gap-2">
-        {(zonesQuery.data ?? []).map((zone) => (
-          <ZoneRow
-            key={zone.id}
-            zone={zone}
-            spotCount={spotCountByZone.get(zone.id) ?? 0}
-          />
-        ))}
-      </ul>
+      {zonesQuery.isLoading ? (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-11 w-full" />
+          ))}
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {(zonesQuery.data ?? []).map((zone) => (
+            <ZoneRow
+              key={zone.id}
+              zone={zone}
+              spotCount={spotCountByZone.get(zone.id) ?? 0}
+            />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

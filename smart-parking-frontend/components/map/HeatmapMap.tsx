@@ -3,24 +3,12 @@
 import { useMemo } from "react";
 import { Map as MapGL, Source, Layer } from "react-map-gl/maplibre";
 import type { FeatureCollection, Point } from "geojson";
-import type { LngLatBoundsLike, StyleSpecification } from "maplibre-gl";
+import type { LngLatBoundsLike } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { HeatmapResponse } from "@/lib/types";
+import { BASEMAP_STYLE } from "@/lib/map-style";
 
 const PRIZREN_CENTER = { longitude: 20.7397, latitude: 42.2139 };
-
-// Shih ParkingMap.tsx: stil bosh, pa varësi rrjeti — i njëjti workaround.
-const BLANK_STYLE: StyleSpecification = {
-  version: 8,
-  sources: {},
-  layers: [
-    {
-      id: "background",
-      type: "background",
-      paint: { "background-color": "#e8edf2" },
-    },
-  ],
-};
 
 interface HeatmapMapProps {
   data: HeatmapResponse;
@@ -94,7 +82,7 @@ export function HeatmapMap({ data, height = "360px" }: HeatmapMapProps) {
                 zoom: 14,
               }
         }
-        mapStyle={BLANK_STYLE}
+        mapStyle={BASEMAP_STYLE}
       >
         <Source id="heatmap-points" type="geojson" data={featureCollection}>
           <Layer

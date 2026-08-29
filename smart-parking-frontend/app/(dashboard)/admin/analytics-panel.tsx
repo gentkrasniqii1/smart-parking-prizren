@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useHeatmap, usePeakHours } from "@/hooks/useAnalytics";
 import { HeatmapMap } from "@/components/map/HeatmapMap";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const DAY_OPTIONS = [7, 14, 30];
 const CHART_HEIGHT_PX = 280;
@@ -42,7 +43,7 @@ export function AnalyticsPanel() {
             Heatmap i aktivitetit (sipas vendndodhjes)
           </h3>
           {heatmapQuery.isLoading ? (
-            <p className="text-muted-foreground">Duke ngarkuar...</p>
+            <Skeleton className="h-[360px] w-full" />
           ) : heatmapQuery.data ? (
             <HeatmapMap data={heatmapQuery.data} />
           ) : (
@@ -55,7 +56,7 @@ export function AnalyticsPanel() {
             Orët e pikut (sipas orës së ditës)
           </h3>
           {peakHoursQuery.isLoading ? (
-            <p className="text-muted-foreground">Duke ngarkuar...</p>
+            <Skeleton className="h-[360px] w-full" />
           ) : peakHoursQuery.data ? (
             <div className="flex h-[360px] items-end gap-[2px] rounded-lg border p-3">
               {peakHoursQuery.data.map((bucket) => (

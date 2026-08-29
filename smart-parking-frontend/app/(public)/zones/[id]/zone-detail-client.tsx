@@ -8,6 +8,7 @@ import { useParkingSocket } from "@/hooks/useParkingSocket";
 import { useActiveSession, useCheckIn, useCheckOut } from "@/hooks/useSessions";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ReserveSpotForm } from "./reserve-spot-form";
 import type { Spot, SpotStatus } from "@/lib/types";
 
@@ -33,7 +34,17 @@ export function ZoneDetailClient({ zoneId }: { zoneId: string }) {
   useParkingSocket(zoneQuery.data ? zoneIds : ZONE_IDS_EMPTY);
 
   if (zoneQuery.isLoading || spotsQuery.isLoading) {
-    return <p className="text-muted-foreground">Duke ngarkuar zonën...</p>;
+    return (
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="w-full" style={{ height: "50vh" }} />
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-[70px] w-full" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (zoneQuery.isError || !zoneQuery.data) {

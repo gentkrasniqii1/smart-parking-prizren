@@ -8,6 +8,7 @@ import {
   useMarkAllNotificationsRead,
 } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Notification, NotificationType } from "@/lib/types";
 
 const TYPE_ICONS: Record<NotificationType, string> = {
@@ -57,7 +58,11 @@ export default function NotificationsPage() {
       </div>
 
       {notificationsQuery.isLoading ? (
-        <p className="text-muted-foreground">Duke ngarkuar...</p>
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 w-full" />
+          ))}
+        </div>
       ) : notifications.length === 0 ? (
         <p className="text-muted-foreground">S&apos;ke asnjë njoftim ende.</p>
       ) : (

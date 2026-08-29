@@ -10,27 +10,13 @@ import {
   type MapRef,
 } from "react-map-gl/maplibre";
 import type { FeatureCollection, Point, Polygon } from "geojson";
-import type { LngLatBoundsLike, StyleSpecification } from "maplibre-gl";
+import type { LngLatBoundsLike } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Spot, SpotStatus, Zone } from "@/lib/types";
+import { BASEMAP_STYLE } from "@/lib/map-style";
 
 const PRIZREN_CENTER = { longitude: 20.7397, latitude: 42.2139 };
 const FLASH_DURATION_MS = 1200;
-
-// Stil bosh, pa varësi rrjeti (pa kërkesa tile/sprite/glyph) — parashikueshëm
-// dhe i lehtë. Zëvendësohet me një provider real (MapTiler, OSM raster,
-// vetë-hostuar, etj.) kur zgjidhet një si pjesë e "polish"-it (Faza 10).
-const BLANK_STYLE: StyleSpecification = {
-  version: 8,
-  sources: {},
-  layers: [
-    {
-      id: "background",
-      type: "background",
-      paint: { "background-color": "#e8edf2" },
-    },
-  ],
-};
 
 const STATUS_COLORS: Record<SpotStatus, string> = {
   free: "#22c55e",
@@ -203,7 +189,7 @@ export function ParkingMap({
                 zoom: 14,
               }
         }
-        mapStyle={BLANK_STYLE}
+        mapStyle={BASEMAP_STYLE}
         interactiveLayerIds={["spots-circle"]}
         onClick={handleClick}
       >
@@ -211,12 +197,12 @@ export function ParkingMap({
           <Layer
             id="zones-fill"
             type="fill"
-            paint={{ "fill-color": "#3b82f6", "fill-opacity": 0.12 }}
+            paint={{ "fill-color": "#3b82f6", "fill-opacity": 0.2 }}
           />
           <Layer
             id="zones-outline"
             type="line"
-            paint={{ "line-color": "#3b82f6", "line-width": 2 }}
+            paint={{ "line-color": "#2563eb", "line-width": 2.5 }}
           />
         </Source>
 

@@ -7,6 +7,7 @@ import { ZonesPanel } from "./zones-panel";
 import { SpotsPanel } from "./spots-panel";
 import { AnalyticsPanel } from "./analytics-panel";
 import { AuditLogPanel } from "./audit-log-panel";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { SpotStatus } from "@/lib/types";
 
 const STATUS_LABELS: Record<SpotStatus, string> = {
@@ -52,7 +53,11 @@ export default function AdminDashboardPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-medium">Përmbledhje</h2>
         {statsQuery.isLoading ? (
-          <p className="text-muted-foreground">Duke ngarkuar...</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-[58px] rounded-md" />
+            ))}
+          </div>
         ) : statsQuery.data ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
             <StatCard label="Zona" value={statsQuery.data.totalZones} />

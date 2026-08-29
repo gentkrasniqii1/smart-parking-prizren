@@ -5,6 +5,7 @@ import { ParkingMap } from "@/components/map/ParkingMap";
 import { useZones } from "@/hooks/useZones";
 import { useSpots } from "@/hooks/useSpots";
 import { useParkingSocket } from "@/hooks/useParkingSocket";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PublicMapPage() {
   const zonesQuery = useZones();
@@ -27,7 +28,7 @@ export default function PublicMapPage() {
       </div>
 
       {zonesQuery.isLoading || spotsQuery.isLoading ? (
-        <p className="text-muted-foreground">Duke ngarkuar hartën...</p>
+        <Skeleton className="w-full" style={{ height: "70vh" }} />
       ) : zonesQuery.isError || spotsQuery.isError ? (
         <p className="text-destructive">
           S&apos;u arrit të ngarkohej harta. Provo përsëri.

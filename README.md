@@ -82,7 +82,8 @@ Frontend runs at `http://localhost:3000`, backend API at `http://localhost:3001`
 - [x] Faza 7 — Njoftimet (live, via WebSocket)
 - [x] Faza 8 — Audit logs + rate-limiting/anti-abuse
 - [x] Faza 9 — Analitika e avancuar (heatmap + orët e pikut)
-- [ ] Faza 10-13 — Polish UI/UX, testim, deploy, dokumentim
+- [x] Faza 10 — Polish UI/UX (basemap real, loading skeletons, nav mobile)
+- [ ] Faza 11-13 — Testim, deploy, dokumentim
 
 ## Live Demo
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuditLogs } from "@/hooks/useAuditLogs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ACTION_LABELS: Record<string, string> = {
   "auth.login": "Hyrje",
@@ -22,7 +23,11 @@ export function AuditLogPanel() {
       <h2 className="text-lg font-medium">Audit Log</h2>
 
       {auditLogsQuery.isLoading ? (
-        <p className="text-muted-foreground">Duke ngarkuar...</p>
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-full" />
+          ))}
+        </div>
       ) : !auditLogsQuery.data || auditLogsQuery.data.length === 0 ? (
         <p className="text-muted-foreground">
           Ende s&apos;ka veprime të regjistruara.

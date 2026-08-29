@@ -9,9 +9,8 @@ datasource db {
   extensions = [postgis]
 }
 
-// Modelet (ParkingZone, ParkingSpot, ParkingSession, Reservation,
-// SensorEvent, Notification, AuditLog) shtohen fazë pas faze — shih
-// CLAUDE.md, seksioni "Roadmap".
+// Modelet (ParkingSession, Reservation, SensorEvent, Notification,
+// AuditLog) shtohen fazë pas faze — shih CLAUDE.md, seksioni "Roadmap".
 
 enum Role {
   citizen
@@ -29,4 +28,40 @@ model User {
   updatedAt          DateTime @updatedAt
 
   @@map("users")
+}
+
+enum SpotStatus {
+  free
+  occupied
+  reserved
+  disabled
+}
+
+// `polygon` mbahet si Unsupported: Prisma Client s'i hidraton dot tipet
+// gjeometrike PostGIS nativisht — leximi/shkrimi bëhet me SQL raw
+// (ST_AsGeoJSON / ST_GeomFromGeoJSON) te ZonesService.
+model ParkingZone {
+  id        String                                 @id @default(uuid())
+  name      String
+  polygon   Unsupported("geometry(Polygon, 4326)")
+  spots     ParkingSpot[]
+  createdAt DateTime                               @default(now())
+  updatedAt DateTime                               @updatedAt
+
+  @@map("parking_zones")
+}
+
+model ParkingSpot {
+  id        String                               @id @default(uuid())
+  code      String
+  location  Unsupported("geometry(Point, 4326)")
+  status    SpotStatus                           @default(free)
+  zoneId    String
+  zone      ParkingZone                          @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  createdAt DateTime                             @default(now())
+  updatedAt DateTime                             @updatedAt
+
+  @@unique([zoneId, code])
+  @@index([zoneId])
+  @@map("parking_spots")
 }

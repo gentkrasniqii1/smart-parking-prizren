@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { ZonesPanel } from "./zones-panel";
 import { SpotsPanel } from "./spots-panel";
+import { AnalyticsPanel } from "./analytics-panel";
 import { AuditLogPanel } from "./audit-log-panel";
 import type { SpotStatus } from "@/lib/types";
 
@@ -79,6 +80,7 @@ export default function AdminDashboardPage() {
 
       <ZonesPanel />
       <SpotsPanel />
+      <AnalyticsPanel />
       <AuditLogPanel />
     </main>
   );

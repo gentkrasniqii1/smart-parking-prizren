@@ -103,6 +103,22 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface HeatmapFeature {
+  type: "Feature";
+  geometry: GeoPoint;
+  properties: { spotId: string; code: string; zoneId: string; weight: number };
+}
+
+export interface HeatmapResponse {
+  type: "FeatureCollection";
+  features: HeatmapFeature[];
+}
+
+export interface PeakHourBucket {
+  hour: number;
+  count: number;
+}
+
 export interface AuditLogEntry {
   id: string;
   action: string;

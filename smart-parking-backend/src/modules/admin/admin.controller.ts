@@ -1,5 +1,6 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service.js';
+import { AnalyticsQueryDto } from './dto/analytics-query.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
@@ -13,5 +14,15 @@ export class AdminController {
   @Get('stats')
   getStats() {
     return this.adminService.getStats();
+  }
+
+  @Get('analytics/heatmap')
+  getHeatmap(@Query() query: AnalyticsQueryDto) {
+    return this.adminService.getHeatmap(query.days ?? 7);
+  }
+
+  @Get('analytics/peak-hours')
+  getPeakHours(@Query() query: AnalyticsQueryDto) {
+    return this.adminService.getPeakHours(query.days ?? 7);
   }
 }

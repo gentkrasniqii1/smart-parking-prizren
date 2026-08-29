@@ -13,6 +13,7 @@ import { SpotsModule } from './modules/spots/spots.module.js';
 import { RealtimeModule } from './modules/realtime/realtime.module.js';
 import { SensorSimulatorModule } from './modules/sensor-simulator/sensor-simulator.module.js';
 import { SessionsModule } from './modules/sessions/sessions.module.js';
+import { ReservationsModule } from './modules/reservations/reservations.module.js';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { SessionsModule } from './modules/sessions/sessions.module.js';
     RealtimeModule,
     SensorSimulatorModule,
     SessionsModule,
+    ReservationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -9,8 +9,8 @@ datasource db {
   extensions = [postgis]
 }
 
-// Modelet (Reservation, Notification, AuditLog) shtohen fazë pas faze —
-// shih CLAUDE.md, seksioni "Roadmap".
+// Modelet (Notification, AuditLog) shtohen fazë pas faze — shih CLAUDE.md,
+// seksioni "Roadmap".
 
 enum Role {
   citizen
@@ -25,6 +25,7 @@ model User {
   role               Role             @default(citizen)
   hashedRefreshToken String?
   sessions           ParkingSession[]
+  reservations       Reservation[]
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
@@ -61,6 +62,7 @@ model ParkingSpot {
   zone         ParkingZone                          @relation(fields: [zoneId], references: [id], onDelete: Cascade)
   sensorEvents SensorEvent[]
   sessions     ParkingSession[]
+  reservations Reservation[]
   createdAt    DateTime                             @default(now())
   updatedAt    DateTime                             @updatedAt
 
@@ -106,4 +108,30 @@ model ParkingSession {
   @@index([spotId])
   @@index([userId])
   @@map("parking_sessions")
+}
+
+enum ReservationStatus {
+  confirmed
+  cancelled
+}
+
+// Rezervimi s'e ndryshon vetë `ParkingSpot.status` (ai pasqyron gjendjen
+// FIZIKE aktuale nga sensori/check-in, jo prenotime të ardhshme) — lidhja e
+// vetme me kohën reale është te SessionsService.checkIn, që refuzon
+// check-in nëse spoti ka rezervim aktiv (tani) të një përdoruesi tjetër.
+model Reservation {
+  id        String            @id @default(uuid())
+  spotId    String
+  spot      ParkingSpot       @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startTime DateTime
+  endTime   DateTime
+  status    ReservationStatus @default(confirmed)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([spotId])
+  @@index([userId])
+  @@map("reservations")
 }

@@ -59,3 +59,22 @@ export interface ActiveSession {
   session: ParkingSession;
   spot: Spot;
 }
+
+export type ReservationStatus = "confirmed" | "cancelled";
+
+export interface Reservation {
+  id: string;
+  spotId: string;
+  userId: string;
+  startTime: string;
+  endTime: string;
+  status: ReservationStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReservationWindow {
+  id: string;
+  startTime: string;
+  endTime: string;
+}

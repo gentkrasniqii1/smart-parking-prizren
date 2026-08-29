@@ -29,6 +29,9 @@ export function Header() {
 
       {user ? (
         <div className="flex items-center gap-3 text-sm">
+          <Link href="/reservations" className="underline">
+            Rezervimet e mia
+          </Link>
           <span className="text-muted-foreground">{user.email}</span>
           <Button variant="outline" size="sm" onClick={handleLogout}>
             Dil

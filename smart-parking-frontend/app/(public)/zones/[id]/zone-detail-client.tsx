@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ParkingMap } from "@/components/map/ParkingMap";
 import { useZone } from "@/hooks/useZones";
 import { useSpots } from "@/hooks/useSpots";
@@ -8,6 +8,7 @@ import { useParkingSocket } from "@/hooks/useParkingSocket";
 import { useActiveSession, useCheckIn, useCheckOut } from "@/hooks/useSessions";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
+import { ReserveSpotForm } from "./reserve-spot-form";
 import type { Spot, SpotStatus } from "@/lib/types";
 
 const STATUS_LABELS: Record<SpotStatus, string> = {
@@ -26,6 +27,7 @@ export function ZoneDetailClient({ zoneId }: { zoneId: string }) {
   const activeSessionQuery = useActiveSession();
   const checkIn = useCheckIn();
   const checkOut = useCheckOut();
+  const [reservingSpotId, setReservingSpotId] = useState<string | null>(null);
 
   const zoneIds = useMemo(() => [zoneId], [zoneId]);
   useParkingSocket(zoneQuery.data ? zoneIds : ZONE_IDS_EMPTY);
@@ -53,7 +55,7 @@ export function ZoneDetailClient({ zoneId }: { zoneId: string }) {
         </h2>
         {!isLoggedIn && (
           <p className="mb-2 text-sm text-muted-foreground">
-            Kyçu për të bërë check-in te një vendparkim i lirë.
+            Kyçu për të bërë check-in ose rezervim.
           </p>
         )}
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
@@ -67,6 +69,12 @@ export function ZoneDetailClient({ zoneId }: { zoneId: string }) {
               onCheckIn={() => checkIn.mutate({ spotId: spot.id })}
               onCheckOut={() => checkOut.mutate()}
               isPending={checkIn.isPending || checkOut.isPending}
+              isReserving={reservingSpotId === spot.id}
+              onToggleReserve={() =>
+                setReservingSpotId((current) =>
+                  current === spot.id ? null : spot.id,
+                )
+              }
             />
           ))}
         </ul>
@@ -83,6 +91,8 @@ function SpotRow({
   onCheckIn,
   onCheckOut,
   isPending,
+  isReserving,
+  onToggleReserve,
 }: {
   spot: Spot;
   isLoggedIn: boolean;
@@ -91,28 +101,44 @@ function SpotRow({
   onCheckIn: () => void;
   onCheckOut: () => void;
   isPending: boolean;
+  isReserving: boolean;
+  onToggleReserve: () => void;
 }) {
   return (
-    <li className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
-      <div>
-        <p className="font-medium">{spot.code}</p>
-        <p className="text-muted-foreground">{STATUS_LABELS[spot.status]}</p>
+    <li className="flex flex-col rounded-md border px-3 py-2 text-sm">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="font-medium">{spot.code}</p>
+          <p className="text-muted-foreground">{STATUS_LABELS[spot.status]}</p>
+        </div>
+
+        <div className="flex gap-2">
+          {isMine ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onCheckOut}
+              disabled={isPending}
+            >
+              Dola
+            </Button>
+          ) : isLoggedIn && spot.status === "free" && !hasOtherActiveSession ? (
+            <Button size="sm" onClick={onCheckIn} disabled={isPending}>
+              Parkova këtu
+            </Button>
+          ) : null}
+
+          {isLoggedIn && spot.status !== "disabled" && (
+            <Button size="sm" variant="outline" onClick={onToggleReserve}>
+              {isReserving ? "Mbyll" : "Rezervo"}
+            </Button>
+          )}
+        </div>
       </div>
 
-      {isMine ? (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onCheckOut}
-          disabled={isPending}
-        >
-          Dola
-        </Button>
-      ) : isLoggedIn && spot.status === "free" && !hasOtherActiveSession ? (
-        <Button size="sm" onClick={onCheckIn} disabled={isPending}>
-          Parkova këtu
-        </Button>
-      ) : null}
+      {isReserving && (
+        <ReserveSpotForm spotId={spot.id} onDone={onToggleReserve} />
+      )}
     </li>
   );
 }

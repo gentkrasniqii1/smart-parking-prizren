@@ -75,7 +75,7 @@ Frontend runs at `http://localhost:3000`, backend API at `http://localhost:3001`
 - [x] Faza 2 — Zones & Spots CRUD + harta bazë
 - [x] Faza 3 — WebSocket real-time + sensor simulator
 - [x] Faza 4 — Check-in manual (QR)
-- [ ] Faza 5 — Rezervimet
+- [x] Faza 5 — Rezervimet
 - [ ] Faza 6 — Admin dashboard
 - [ ] Faza 7-13 — Njoftimet, audit logs, analitika, testim, deploy
 

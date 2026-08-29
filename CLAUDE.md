@@ -33,7 +33,7 @@ Platformë real-time për parkim inteligjent në Prizren — projekti #2 i porto
 - **ParkingZone** (id, emri, `polygon` PostGIS `geometry(Polygon,4326)`, createdAt, updatedAt) — ✅ Faza 2
 - **ParkingSpot** (id, kodi, `location` PostGIS `geometry(Point,4326)`, statusi: free|occupied|reserved|disabled, zoneId, unik (zoneId,code)) — ✅ Faza 2
 - **ParkingSession** (id, spotId, userId?, checkIn, checkOut?, burimi: sensor|manual|qr) — ✅ Faza 4 (userId opsional në skemë, por check-in manual gjithmonë e vendos)
-- **Reservation** (spotId, userId, koha_fillimit, koha_mbarimit, statusi) — Faza 5
+- **Reservation** (id, spotId, userId, startTime, endTime, statusi: confirmed|cancelled) — ✅ Faza 5
 - **SensorEvent** (id, spotId, statusi, timestamp) — ✅ Faza 3
 - **Notification** (userId, tipi, mesazhi, lexuar) — Faza 7
 - **AuditLog** (aksioni, aktori, timestamp) — Faza 8
@@ -51,13 +51,13 @@ Platformë real-time për parkim inteligjent në Prizren — projekti #2 i porto
 smart-parking-prizren/
 ├── smart-parking-frontend/
 │   ├── app/
-│   │   ├── (public)/page.tsx ✅ (harta statike), (public)/zones/[id]/ ✅ (detaje+listë spotesh)
-│   │   ├── (auth)/login/, (auth)/register/
+│   │   ├── (public)/page.tsx ✅ (harta statike), (public)/zones/[id]/ ✅ (detaje+listë spotesh+rezervim), (public)/reservations/ ✅ (rezervimet e mia)
+│   │   ├── (auth)/login/ ✅, (auth)/register/ ✅
 │   │   ├── (dashboard)/admin/, (dashboard)/attendant/
 │   │   └── layout.tsx
 │   ├── components/{map/ParkingMap.tsx ✅ (me flash live),nav/Header.tsx ✅,ui,providers}/
-│   ├── hooks/{useZones.ts,useSpots.ts,useParkingSocket.ts ✅ (patch cache live),useSessions.ts ✅}
-│   ├── lib/{api.ts ✅ (auth header+refresh-retry),auth.ts ✅,sessions.ts ✅,zones.ts,spots.ts,types.ts,socket.ts,utils.ts}
+│   ├── hooks/{useZones.ts,useSpots.ts,useParkingSocket.ts ✅ (patch cache live),useSessions.ts ✅,useReservations.ts ✅}
+│   ├── lib/{api.ts ✅ (auth header+refresh-retry),auth.ts ✅,sessions.ts ✅,reservations.ts ✅,zones.ts,spots.ts,types.ts,socket.ts,utils.ts}
 │   ├── store/{useUiStore.ts, useAuthStore.ts ✅ (zustand persist → localStorage)}
 │   └── Dockerfile, .env.local, .env.example
 │
@@ -70,8 +70,9 @@ smart-parking-prizren/
 │   │   │   ├── spots/ ✅ (CRUD raw-SQL + PostGIS, admin-only shkrim; exports SpotsService)
 │   │   │   ├── realtime/realtime.gateway.ts ✅ (Socket.io Gateway: zone:join/leave, spot:update)
 │   │   │   ├── sensor-simulator/ ✅ (`@Interval` worker, free↔occupied; përjashton spote me sesion aktiv)
-│   │   │   ├── sessions/ ✅ (check-in/check-out, transaksion + compare-and-swap mbi status)
-│   │   │   └── {reservations,notifications,audit-log}/ (bosh, fazë e mëvonshme)
+│   │   │   ├── sessions/ ✅ (check-in/check-out, transaksion + compare-and-swap mbi status; refuzon check-in nëse spoti ka rezervim aktiv i dikujt tjetër)
+│   │   │   ├── reservations/ ✅ (validim konfliktesh kohore, cancel, /spot/:id/upcoming publik)
+│   │   │   └── {notifications,audit-log}/ (bosh, fazë e mëvonshme)
 │   │   ├── redis/{redis.module.ts,redis.service.ts,redis-channels.ts} ✅ (@Global, publisher+subscriber ioredis)
 │   │   ├── common/{guards,decorators}/ ✅ (JwtAuthGuard, JwtRefreshGuard, RolesGuard, @Roles(), @CurrentUser())
 │   │   ├── common/{dto,validators}/ ✅ (GeoPointDto, GeoPolygonDto + validatorë GeoJSON)
@@ -95,7 +96,7 @@ smart-parking-prizren/
 - [x] **Faza 2:** Zones & Spots CRUD + PostGIS + harta bazë (statike)
 - [x] **Faza 3:** WebSocket Gateway + Redis pub/sub + sensor simulator → harta bëhet live
 - [x] **Faza 4:** Check-in/check-out manual (QR/buton)
-- [ ] **Faza 5:** Rezervimet (booking) + validim konfliktesh kohore
+- [x] **Faza 5:** Rezervimet (booking) + validim konfliktesh kohore
 - [ ] **Faza 6:** Admin dashboard
 - [ ] **Faza 7:** Njoftimet
 - [ ] **Faza 8:** Audit logs + rate-limiting/anti-abuse
@@ -124,3 +125,4 @@ smart-parking-prizren/
 - **Shënim mjedisi**: `npm run start:dev` (Nest `--watch`) nën Windows shpesh e le procesin `node` të varur pas `TaskStop`/Ctrl-C — porti (3001) mbetet i zënë. Kontrollo `Get-NetTCPConnection -LocalPort 3001` dhe bëj `Stop-Process` para se të rinisësh serverin.
 - **2026-08-29** — Faza 3 (Real-time): `RedisService` mban 2 lidhje `ioredis` (`publisher`/`subscriber`) — një klient në modalitet subscribe s'mund të lëshojë komanda të tjera, prandaj ndahen. `RealtimeGateway` pajtohet te channel-i `parking:spot-status` në `onModuleInit` dhe transmeton `spot:update` te `server.to(zoneId)`; **s'e prek DB-në** — shkrimi bëhet nga `SensorSimulatorService`, gateway-i vetëm ripërcjell. `SpotsModule` s'e eksportonte `SpotsService` (s'kishte nevojë deri në Fazën 2) — u shtua `exports: [SpotsService]` që `SensorSimulatorModule` ta injektojë. `@Interval()` e Nest-it merr vlerën e intervalit në kohën e ngarkimit të klasës (jo via DI/ConfigService) → përdoret `process.env.SENSOR_SIMULATOR_INTERVAL_MS` direkt (mjafton, pasi `ConfigModule.forRoot()` e populon `process.env` që në nisje). Migrimi i `SensorEvent` fillimisht donte të fshinte indekset GiST (Prisma s'i njeh si "të qëllimshme" pasi janë mbi kolona `Unsupported`) — u redaktua migration.sql para aplikimit për t'i ruajtur. Frontend: `import { Map } from "react-map-gl/maplibre"` përplasej me `Map` globale të JS-it (përdorur për `prevStatusRef`/`flashTimeoutsRef`) → riemërtuar `MapGL`. `react-hooks` (eslint) e re s'lejon mutim të `ref.current` gjatë render-it (`onSpotUpdateRef.current = onSpotUpdate`) → zhvendosur brenda `useEffect`. **Verifikuar tërësisht**: script Node me `socket.io-client` konfirmoi zinxhirin e plotë (simulator→DB→SensorEvent→Redis→Gateway→WS→klient); browser (DOM/tekst, jo WebGL) konfirmoi që statuset në listën e spoteve ndryshojnë live pa refresh faqeje.
 - **2026-08-29** — Faza 4 (Check-in/check-out): titulli i fazës përmend eksplicit "buton", çka nënkupton UI — dhe check-in kërkon domosdoshmërisht qytetar të kyçur, por frontend-i deri atëherë s'kishte fare autentikim të lidhur (Faza 1 ishte vetëm backend). Prandaj Faza 4 përfshiu edhe telajimin minimal të auth-it në frontend: `useAuthStore` (zustand + `persist` → localStorage), `lib/api.ts` bashkangjit `Authorization` automatikisht dhe provon një rifreskim token-i (`/auth/refresh`) + ritentativë të vetme te 401. **Thjeshtim i qëllimshëm**: token-at (access+refresh) ruhen në localStorage, jo httpOnly cookie — më i lehtë pasi backend-i tashmë i kthen në trupin JSON (Faza 1); hardening me httpOnly cookie do të ishte ndryshim arkitekturor më i madh, i lënë për diskutim të mëvonshëm nëse duhet (jo Faza 4). `ParkingSession`: check-in/check-out bëhen brenda `prisma.$transaction()`, me "compare-and-swap" (`UPDATE ... WHERE status='free'`, kontrollon rreshtat e prekur) për mbrojtje nga race condition kur dy qytetarë bëjnë check-in njëkohësisht në të njëjtin spot — nëse `affected===0`, hidhet `ConflictException` dhe transaksioni bën rollback (edhe krijimi i sesionit anulohet). Sensor simulator (Faza 3) u përditësua të përjashtojë spote me sesion aktiv (`findRandomTogglable`) — përndryshe do t'i "lironte" vetë spotet ku dikush është realisht i parkuar. **Bug real i gjetur e rregulluar në browser**: kur `/sessions/me/active` kthen `null`, Express/Nest dërgon trup krejt bosh (`Content-Length: 0`), jo stringun `"null"`; `apiFetch`-i e kthente këtë si `undefined`, dhe React Query e injoron `undefined` si "pa përditësim" — UI-ja mbante "Dola" edhe pas check-out-it të suksesshëm derisa të rifreskohej faqja. Rregulluar duke kthyer `null` (jo `undefined`) për trup bosh te `parseBody`. Testuar plotësisht: curl (201/409×2/200/404/401) + browser i vërtetë (regjistrim→login→check-in→verifikim UI (buton zhduket kudo tjetër)→check-out→verifikim (buton kthehet "Parkova këtu", pa "Dola" të mbetur)→logout).
+- **2026-08-29** — Faza 5 (Rezervimet): `Reservation` s'e ndryshon `ParkingSpot.status` në kohën e krijimit — statusi pasqyron gjendjen FIZIKE aktuale (sensor/check-in), jo prenotime të ardhshme; do të ishte gabim ta shënonim "reserved" që në krijim, pasi do të bllokonte spotin edhe para se të fillojë intervali i rezervuar. Validimi i konfliktit bëhet me Prisma Client të thjeshtë (`findFirst` me `startTime: {lt: end}, endTime: {gt: start}` — mbivendosje standarde intervalesh) — **pa SQL raw**, ndryshe nga zones/spots, sepse `Reservation` s'ka fare kolona PostGIS. Lidhja e vetme me kohën reale: `SessionsService.checkIn` tani refuzon (409) nëse spoti ka një rezervim `confirmed` "aktiv tani" (startTime≤now<endTime) të një përdoruesi tjetër — pikërisht rasti "konflikt rezervimi" i përmendur shprehimisht te §7. Testuar edhe skenari i plotë: user A rezervon një spot 2s në të ardhmen, pritet të bëhet aktiv, user B provon check-in → 409, statusi i spotit mbetet "free" (check-in-i u refuzua para se të prekte DB-në). **Bug mjedisi (jo kod)**: pas shumë cikle preview_start/stop, cache-i dev i Turbopack (`.next/`) u dëmtua dhe `/zones/[id]` ktheu 404 edhe pse skedari ekzistonte korrekt — u zgjidh duke fshirë `.next/` dhe rinisur serverin. Nëse ndodh sërish (route "zhduket" pa ndryshim kodi), provo këtë para se të kërkosh bug në kod. Testuar plotësisht: curl (201/409 mbivendosje/400 e kaluar/400 endTime≤startTime/401/cancel+re-book) + browser i vërtetë (rezervim → shfaqet te "Rezervimet e mia" → anulim live pa refresh).

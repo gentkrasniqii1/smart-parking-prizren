@@ -3,7 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ParkingSession, SessionSource } from '@prisma/client';
+import {
+  ParkingSession,
+  ReservationStatus,
+  SessionSource,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RedisService } from '../../redis/redis.service.js';
 import { SPOT_STATUS_CHANNEL } from '../../redis/redis-channels.js';
@@ -34,6 +38,24 @@ export class SessionsService {
       if (activeSession) {
         throw new ConflictException(
           'Ke tashmë një sesion aktiv parkimi diku tjetër',
+        );
+      }
+
+      // Rasti "konflikt rezervimi": dikush tjetër e ka rezervuar këtë spot
+      // pikërisht tani — check-in-i i lirë s'duhet ta anashkalojë rezervimin.
+      const now = new Date();
+      const activeReservation = await tx.reservation.findFirst({
+        where: {
+          spotId: dto.spotId,
+          status: ReservationStatus.confirmed,
+          startTime: { lte: now },
+          endTime: { gt: now },
+          userId: { not: userId },
+        },
+      });
+      if (activeReservation) {
+        throw new ConflictException(
+          'Ky vend parkimi është i rezervuar tani nga dikush tjetër',
         );
       }
 

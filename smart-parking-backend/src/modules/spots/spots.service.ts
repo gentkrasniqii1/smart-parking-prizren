@@ -52,10 +52,13 @@ export class SpotsService {
     return rows.map((row) => this.toSpot(row));
   }
 
+  // Spotet me një sesion check-in aktiv (checkOut IS NULL) përjashtohen —
+  // dikush është realisht i parkuar atje, sensori s'duhet ta "lëshojë" vetë.
   async findRandomTogglable(count: number): Promise<SpotWithGeometry[]> {
     const rows = await this.prisma.$queryRaw<SpotRow[]>`
       SELECT ${SPOT_COLUMNS} FROM parking_spots
       WHERE status IN ('free', 'occupied')
+        AND id NOT IN (SELECT "spotId" FROM parking_sessions WHERE "checkOut" IS NULL)
       ORDER BY random()
       LIMIT ${count}
     `;

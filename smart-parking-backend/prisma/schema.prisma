@@ -9,8 +9,8 @@ datasource db {
   extensions = [postgis]
 }
 
-// Modelet (ParkingSession, Reservation, Notification, AuditLog) shtohen
-// fazë pas faze — shih CLAUDE.md, seksioni "Roadmap".
+// Modelet (Reservation, Notification, AuditLog) shtohen fazë pas faze —
+// shih CLAUDE.md, seksioni "Roadmap".
 
 enum Role {
   citizen
@@ -19,13 +19,14 @@ enum Role {
 }
 
 model User {
-  id                 String   @id @default(uuid())
-  email              String   @unique
+  id                 String           @id @default(uuid())
+  email              String           @unique
   passwordHash       String
-  role               Role     @default(citizen)
+  role               Role             @default(citizen)
   hashedRefreshToken String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  sessions           ParkingSession[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   @@map("users")
 }
@@ -59,6 +60,7 @@ model ParkingSpot {
   zoneId       String
   zone         ParkingZone                          @relation(fields: [zoneId], references: [id], onDelete: Cascade)
   sensorEvents SensorEvent[]
+  sessions     ParkingSession[]
   createdAt    DateTime                             @default(now())
   updatedAt    DateTime                             @updatedAt
 
@@ -78,4 +80,30 @@ model SensorEvent {
 
   @@index([spotId])
   @@map("sensor_events")
+}
+
+enum SessionSource {
+  sensor
+  manual
+  qr
+}
+
+// `userId` opsional: sesionet e krijuara nga "sensor simulator"-i (jo ende
+// të lidhura, shih CLAUDE.md §4/§8) do të ishin anonime; check-in/check-out
+// manual (Faza 4) gjithmonë e vendos userId, pasi kërkon qytetar të kyçur.
+model ParkingSession {
+  id        String        @id @default(uuid())
+  spotId    String
+  spot      ParkingSpot   @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  checkIn   DateTime      @default(now())
+  checkOut  DateTime?
+  source    SessionSource
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([spotId])
+  @@index([userId])
+  @@map("parking_sessions")
 }

@@ -12,6 +12,7 @@ import { ZonesModule } from './modules/zones/zones.module.js';
 import { SpotsModule } from './modules/spots/spots.module.js';
 import { RealtimeModule } from './modules/realtime/realtime.module.js';
 import { SensorSimulatorModule } from './modules/sensor-simulator/sensor-simulator.module.js';
+import { SessionsModule } from './modules/sessions/sessions.module.js';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { SensorSimulatorModule } from './modules/sensor-simulator/sensor-simulat
     SpotsModule,
     RealtimeModule,
     SensorSimulatorModule,
+    SessionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -27,3 +27,35 @@ export interface Spot {
   createdAt: string;
   updatedAt: string;
 }
+
+export type Role = "citizen" | "attendant" | "admin";
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: Role;
+  createdAt: string;
+}
+
+export interface TokenPair {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export type SessionSource = "sensor" | "manual" | "qr";
+
+export interface ParkingSession {
+  id: string;
+  spotId: string;
+  userId: string | null;
+  checkIn: string;
+  checkOut: string | null;
+  source: SessionSource;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ActiveSession {
+  session: ParkingSession;
+  spot: Spot;
+}

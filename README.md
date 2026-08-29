@@ -70,6 +70,23 @@ npm run dev
 
 Frontend runs at `http://localhost:3000`, backend API at `http://localhost:3001`.
 
+## Deployment
+
+Target architecture: **frontend → Vercel**, **backend + Redis + Postgres/PostGIS → Railway** (Render works the same way). Both `Dockerfile`s are multi-stage with a `dev` target (used by `docker-compose.yml` for local hot-reload) and a production target that's the default when no `--target` is passed — that's the one Railway builds.
+
+1. **Database (PostgreSQL + PostGIS).** Railway's managed Postgres template doesn't include PostGIS, so deploy it as a Docker-image service instead: *New Service → Docker Image* → `postgis/postgis:16-3.4`, with a persistent volume mounted at `/var/lib/postgresql/data` and `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB` set. Note its internal connection details.
+2. **Redis.** *New Service → Database → Redis* (the stock template is fine — no extensions needed).
+3. **Backend.** *New Service → GitHub Repo* → this repo, **Root Directory: `smart-parking-backend`**. Railway detects the `Dockerfile` and builds the production target automatically. Set env vars: `DATABASE_URL`, `REDIS_URL` (from steps 1–2), `JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET` (generate real random values — **never reuse the `.env.example` placeholders**), `JWT_ACCESS_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN`, `PORT=3001`, `SENSOR_SIMULATOR_ENABLED`, `SENSOR_SIMULATOR_INTERVAL_MS`. Expose a public domain. `prisma migrate deploy` runs automatically on every container start (baked into the image's `CMD`) — no separate release/migration step needed. To load the demo seed data once, run `npm run db:seed` in a one-off shell against the deployed service.
+4. **Frontend.** Import the repo into Vercel with **Root Directory: `smart-parking-frontend`** (Vercel builds Next.js natively — it does not use the Dockerfile at all). Set `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WS_URL` to the backend's public Railway URL, then deploy.
+5. **Close the loop.** Back on the backend service, set `FRONTEND_URL` to the Vercel URL and redeploy — this locks CORS down to just that origin (leaving it unset reflects any origin, which is fine for local dev only).
+
+**Test a production build locally first**, without needing a real Vercel/Railway account:
+```bash
+docker build -t smart-parking-backend ./smart-parking-backend
+docker build --build-arg NEXT_PUBLIC_API_URL=http://localhost:3001 --build-arg NEXT_PUBLIC_WS_URL=http://localhost:3001 -t smart-parking-frontend ./smart-parking-frontend
+```
+(`docker-compose.yml` itself always builds the `dev` target — it's for local hot-reload, not a production deploy path.)
+
 ## Roadmap
 
 - [x] Faza 0 — Scaffold (Next.js + NestJS + Docker)
@@ -84,7 +101,8 @@ Frontend runs at `http://localhost:3000`, backend API at `http://localhost:3001`
 - [x] Faza 9 — Analitika e avancuar (heatmap + orët e pikut)
 - [x] Faza 10 — Polish UI/UX (basemap real, loading skeletons, nav mobile)
 - [x] Faza 11 — Testim backend (unit + e2e, vitest+supertest)
-- [ ] Faza 12-13 — Deploy, dokumentim
+- [x] Faza 12 — Dockerizim final (prod images multi-stage) + udhëzues deploy
+- [ ] Faza 13 — Dokumentim
 
 ## Live Demo
 

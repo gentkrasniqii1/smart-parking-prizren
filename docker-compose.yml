@@ -35,6 +35,7 @@ services:
     build:
       context: ./smart-parking-backend
       dockerfile: Dockerfile
+      target: dev
     container_name: smart-parking-backend
     restart: unless-stopped
     depends_on:
@@ -60,6 +61,7 @@ services:
     build:
       context: ./smart-parking-frontend
       dockerfile: Dockerfile
+      target: dev
     container_name: smart-parking-frontend
     restart: unless-stopped
     depends_on:

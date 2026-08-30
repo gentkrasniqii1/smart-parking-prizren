@@ -21,9 +21,8 @@ export const PasswordInput = forwardRef<HTMLInputElement, ComponentProps<"input"
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          tabIndex={-1}
           aria-label={visible ? "Fshih fjalëkalimin" : "Shfaq fjalëkalimin"}
-          className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          className="absolute top-1/2 right-0 flex size-11 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
           {visible ? (
             <EyeOff className="size-4" />

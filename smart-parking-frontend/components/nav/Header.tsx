@@ -37,16 +37,29 @@ function initials(email: string) {
   return email.slice(0, 2).toUpperCase();
 }
 
-function NotificationBell({ unread }: { unread: number }) {
+function NotificationBell({
+  unread,
+  className,
+}: {
+  unread: number;
+  className?: string;
+}) {
   return (
     <Link
       href="/notifications"
       aria-label={`Njoftimet${unread ? ` (${unread} të palexuara)` : ""}`}
-      className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "relative")}
+      className={cn(
+        buttonVariants({ variant: "ghost", size: "icon" }),
+        "relative",
+        className,
+      )}
     >
       <Bell className="size-4" />
       {unread > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-status-occupied-fg px-1 text-[10px] font-medium text-white">
+        <span
+          aria-hidden="true"
+          className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-status-occupied-fg px-1 text-[10px] font-medium text-white"
+        >
           {unread > 9 ? "9+" : unread}
         </span>
       )}
@@ -128,7 +141,10 @@ export function Header() {
               )}
 
               <DropdownMenu>
-                <DropdownMenuTrigger className="ml-1 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+                <DropdownMenuTrigger
+                  aria-label="Menyja e llogarisë"
+                  className="ml-1 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
                   <Avatar size="sm">
                     <AvatarFallback>{initials(user.email)}</AvatarFallback>
                   </Avatar>
@@ -157,25 +173,18 @@ export function Header() {
           )}
         </div>
 
-        {/* Hamburger — vetëm mobile */}
+        {/* Hamburger — vetëm mobile. Butonat këtu janë 44px (size-11) —
+            objektiv prekjeje minimal për mobile, ndryshe nga dendësia e
+            lejueshme e navbar-it desktop (size-8/icon). */}
         <div className="flex items-center gap-1 sm:hidden">
-          <ThemeToggle />
-          {isLoggedIn && (
-            <Link href="/notifications" className="relative">
-              <Button variant="ghost" size="icon" aria-label="Njoftimet">
-                <Bell className="size-4" />
-              </Button>
-              {unread > 0 && (
-                <span className="pointer-events-none absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-status-occupied-fg px-1 text-[10px] font-medium text-white">
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              )}
-            </Link>
-          )}
+          <ThemeToggle className="size-11" />
+          {isLoggedIn && <NotificationBell unread={unread} className="size-11" />}
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger render={<Button variant="ghost" size="icon" />}>
+            <SheetTrigger
+              aria-label="Hap menynë"
+              render={<Button variant="ghost" size="icon" className="size-11" />}
+            >
               <Menu className="size-5" />
-              <span className="sr-only">Menu</span>
             </SheetTrigger>
             <SheetContent side="right">
               <SheetHeader>
@@ -190,7 +199,7 @@ export function Header() {
                     <SheetClose
                       nativeButton={false}
                       render={<Link href="/reservations" />}
-                      className="rounded-md px-2 py-2 text-sm hover:bg-muted"
+                      className="flex min-h-11 items-center rounded-md px-2 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       Rezervimet e mia
                     </SheetClose>
@@ -198,14 +207,14 @@ export function Header() {
                       <SheetClose
                         nativeButton={false}
                         render={<Link href="/admin" />}
-                        className="rounded-md px-2 py-2 text-sm hover:bg-muted"
+                        className="flex min-h-11 items-center rounded-md px-2 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         Paneli admin
                       </SheetClose>
                     )}
                     <Button
                       variant="outline"
-                      className="mt-3 justify-start"
+                      className="mt-3 min-h-11 justify-start"
                       onClick={handleLogout}
                     >
                       <LogOut />
@@ -216,7 +225,10 @@ export function Header() {
                   <SheetClose
                     nativeButton={false}
                     render={<Link href="/login" />}
-                    className={cn(buttonVariants({ size: "sm" }), "justify-center")}
+                    className={cn(
+                      buttonVariants({ size: "sm" }),
+                      "min-h-11 justify-center",
+                    )}
                   >
                     Kyçu
                   </SheetClose>

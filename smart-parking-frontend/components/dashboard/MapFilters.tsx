@@ -68,7 +68,7 @@ export function MapFilters({
               onClick={() => onToggleStatus(status)}
               aria-pressed={active}
               className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                "min-h-9 rounded-full border px-3 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 active
                   ? STATUS_CHIP_ACTIVE[status]
                   : "border-border text-muted-foreground hover:bg-muted",

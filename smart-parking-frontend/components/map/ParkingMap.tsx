@@ -16,7 +16,11 @@ import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import type { Spot, SpotStatus, Zone } from "@/lib/types";
 import { BASEMAP_STYLE } from "@/lib/map-style";
-import { STATUS_LABELS, STATUS_MARKER_COLORS } from "@/lib/status-colors";
+import {
+  STATUS_LABELS,
+  STATUS_MARKER_COLORS,
+  STATUS_MARKER_LETTERS,
+} from "@/lib/status-colors";
 import { cn } from "@/lib/utils";
 
 const PRIZREN_CENTER = { longitude: 20.7397, latitude: 42.2139 };
@@ -46,14 +50,22 @@ function zonesToFeatureCollection(
 
 function spotsToFeatureCollection(
   spots: Spot[],
-): FeatureCollection<Point, { id: string; code: string; status: SpotStatus }> {
+): FeatureCollection<
+  Point,
+  { id: string; code: string; status: SpotStatus; statusLetter: string }
+> {
   return {
     type: "FeatureCollection",
     features: spots.map((spot) => ({
       type: "Feature",
       id: spot.id,
       geometry: spot.location,
-      properties: { id: spot.id, code: spot.code, status: spot.status },
+      properties: {
+        id: spot.id,
+        code: spot.code,
+        status: spot.status,
+        statusLetter: STATUS_MARKER_LETTERS[spot.status],
+      },
     })),
   };
 }
@@ -282,6 +294,23 @@ export function ParkingMap({
               ],
             }}
           />
+          {/* Shkronjë brenda çdo marker-i (L/Z/R/J) — jo vetëm ngjyra dallon
+              statusin (WCAG 1.4.1), e dukshme në çdo nivel zoom-i. */}
+          <Layer
+            id="spots-status-letter"
+            type="symbol"
+            layout={{
+              "text-field": ["get", "statusLetter"],
+              "text-size": 9,
+              "text-font": ["Noto Sans Regular"],
+              "text-allow-overlap": true,
+              "text-ignore-placement": true,
+            }}
+            paint={{
+              "text-color": "#ffffff",
+              "text-halo-width": 0,
+            }}
+          />
           <Layer
             id="spots-label"
             type="symbol"
@@ -316,11 +345,14 @@ export function ParkingMap({
               className="flex items-center gap-2 py-0.5 text-sm"
             >
               <span
-                className="size-2 shrink-0 rounded-full"
+                aria-hidden="true"
+                className="flex size-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
                 style={{
                   backgroundColor: STATUS_MARKER_COLORS[selectedSpot.status],
                 }}
-              />
+              >
+                {STATUS_MARKER_LETTERS[selectedSpot.status]}
+              </span>
               <div>
                 <p className="font-semibold">{selectedSpot.code}</p>
                 <p className="text-xs text-muted-foreground">
@@ -346,7 +378,8 @@ function StatusLegend() {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="flex w-full items-center justify-between gap-3 px-3 py-2 font-medium"
+          aria-controls="parking-map-legend-list"
+          className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
         >
           Legjenda
           <ChevronDown
@@ -357,13 +390,19 @@ function StatusLegend() {
           />
         </button>
         {expanded && (
-          <div className="flex flex-col gap-1.5 px-3 pb-2.5">
+          <div
+            id="parking-map-legend-list"
+            className="flex flex-col gap-2 px-3 pb-2.5"
+          >
             {(Object.keys(STATUS_LABELS) as SpotStatus[]).map((status) => (
               <div key={status} className="flex items-center gap-2">
                 <span
-                  className="h-2.5 w-2.5 rounded-full border border-white"
+                  aria-hidden="true"
+                  className="flex size-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
                   style={{ backgroundColor: STATUS_MARKER_COLORS[status] }}
-                />
+                >
+                  {STATUS_MARKER_LETTERS[status]}
+                </span>
                 <span>{STATUS_LABELS[status]}</span>
               </div>
             ))}

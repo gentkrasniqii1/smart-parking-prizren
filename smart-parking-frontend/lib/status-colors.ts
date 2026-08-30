@@ -28,3 +28,14 @@ export const STATUS_BADGE_CLASSES: Record<SpotStatus, string> = {
   reserved: "bg-status-reserved-bg text-status-reserved-fg",
   disabled: "bg-status-disabled-bg text-status-disabled-fg",
 };
+
+// Faza 14.6 (audit aksesueshmërie): shkronjë dalluese për çdo status — mbi
+// hartë ngjyra e vetme s'mjafton për dikë me daltonizëm (WCAG 1.4.1, "Use of
+// Color"). Shkronja e parë e etiketës shqip, gjithmonë e pranishme përkrah
+// ngjyrës te marker-at, legjenda dhe popup-i.
+export const STATUS_MARKER_LETTERS: Record<SpotStatus, string> = {
+  free: "L",
+  occupied: "Z",
+  reserved: "R",
+  disabled: "J",
+};

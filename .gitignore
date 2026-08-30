@@ -28,3 +28,6 @@ smart-parking-backend/prisma/migrations/dev/
 
 # Docker
 docker-compose.override.yml
+
+smart-parking-backend/tsconfig.build.tsbuildinfo
+.claude/scheduled_tasks.lock

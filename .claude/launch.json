@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "smart-parking-frontend", "run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "smart-parking-backend", "run", "start:dev"],
+      "port": 3001
     }
   ]
 }

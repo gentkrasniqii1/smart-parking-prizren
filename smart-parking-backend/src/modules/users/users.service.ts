@@ -14,12 +14,24 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
+  findByGoogleId(googleId: string): Promise<User | null> {
+    return this.prisma.user.findUnique({ where: { googleId } });
+  }
+
   create(data: {
     email: string;
-    passwordHash: string;
+    passwordHash?: string;
+    googleId?: string;
     role?: Role;
   }): Promise<User> {
     return this.prisma.user.create({ data });
+  }
+
+  linkGoogleId(userId: string, googleId: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { googleId },
+    });
   }
 
   updateRefreshTokenHash(

@@ -12,6 +12,7 @@ import { AuditLogService } from '../audit-log/audit-log.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { TokenPair } from './types/token-pair.type.js';
+import { GoogleProfile } from './types/google-profile.type.js';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -53,10 +54,12 @@ export class AuthService {
       throw new UnauthorizedException('Kredenciale të pasakta');
     }
 
-    const passwordMatches = await bcrypt.compare(
-      dto.password,
-      user.passwordHash,
-    );
+    // `passwordHash` mungon te user-at e krijuar vetëm përmes Google — trajto
+    // si kredenciale të pasakta, jo si gabim (mos zbulo se llogaria është
+    // Google-only, njësoj si te çdo email tjetër i panjohur).
+    const passwordMatches = user.passwordHash
+      ? await bcrypt.compare(dto.password, user.passwordHash)
+      : false;
     if (!passwordMatches) {
       await this.auditLogService.record('auth.login_failed', user.id, {
         email: dto.email,
@@ -66,6 +69,37 @@ export class AuthService {
 
     const tokens = await this.issueTokens(user.id, user.email, user.role);
     await this.auditLogService.record('auth.login', user.id, {
+      email: user.email,
+    });
+    return { user, tokens };
+  }
+
+  async loginWithGoogle(
+    profile: GoogleProfile,
+  ): Promise<{ user: User; tokens: TokenPair }> {
+    let user = await this.usersService.findByGoogleId(profile.googleId);
+
+    if (!user) {
+      const existingByEmail = await this.usersService.findByEmail(
+        profile.email,
+      );
+      if (existingByEmail) {
+        // Llogari lokale ekzistuese me të njëjtin email — lidh googleId-në
+        // në vend të krijimit të një user-i të dytë (email-i është @unique).
+        user = await this.usersService.linkGoogleId(
+          existingByEmail.id,
+          profile.googleId,
+        );
+      } else {
+        user = await this.usersService.create({
+          email: profile.email,
+          googleId: profile.googleId,
+        });
+      }
+    }
+
+    const tokens = await this.issueTokens(user.id, user.email, user.role);
+    await this.auditLogService.record('auth.google_login', user.id, {
       email: user.email,
     });
     return { user, tokens };

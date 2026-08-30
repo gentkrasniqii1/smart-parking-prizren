@@ -18,7 +18,13 @@ enum Role {
 model User {
   id                 String           @id @default(uuid())
   email              String           @unique
-  passwordHash       String
+  // Opsionale që kur u shtua Google OAuth (Faza 14.3) — një user i krijuar
+  // vetëm përmes Google s'ka fjalëkalim lokal; login-i klasik e kontrollon
+  // shprehimisht rastin null (shih AuthService.login).
+  passwordHash       String?
+  // Vetëm për user-a që janë kyçur të paktën një herë me Google — lidhje
+  // (jo zëvendësim) me llogarinë ekzistuese kur email-i përputhet.
+  googleId           String?          @unique
   role               Role             @default(citizen)
   hashedRefreshToken String?
   sessions           ParkingSession[]

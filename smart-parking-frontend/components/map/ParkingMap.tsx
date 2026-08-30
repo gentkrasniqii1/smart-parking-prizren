@@ -14,23 +14,10 @@ import type { LngLatBoundsLike } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Spot, SpotStatus, Zone } from "@/lib/types";
 import { BASEMAP_STYLE } from "@/lib/map-style";
+import { STATUS_LABELS, STATUS_MARKER_COLORS } from "@/lib/status-colors";
 
 const PRIZREN_CENTER = { longitude: 20.7397, latitude: 42.2139 };
 const FLASH_DURATION_MS = 1200;
-
-const STATUS_COLORS: Record<SpotStatus, string> = {
-  free: "#22c55e",
-  occupied: "#ef4444",
-  reserved: "#f59e0b",
-  disabled: "#6b7280",
-};
-
-const STATUS_LABELS: Record<SpotStatus, string> = {
-  free: "I lirë",
-  occupied: "I zënë",
-  reserved: "I rezervuar",
-  disabled: "Jashtë funksionit",
-};
 
 interface ParkingMapProps {
   zones: Zone[];
@@ -229,14 +216,14 @@ export function ParkingMap({
                 "match",
                 ["get", "status"],
                 "free",
-                STATUS_COLORS.free,
+                STATUS_MARKER_COLORS.free,
                 "occupied",
-                STATUS_COLORS.occupied,
+                STATUS_MARKER_COLORS.occupied,
                 "reserved",
-                STATUS_COLORS.reserved,
+                STATUS_MARKER_COLORS.reserved,
                 "disabled",
-                STATUS_COLORS.disabled,
-                STATUS_COLORS.free,
+                STATUS_MARKER_COLORS.disabled,
+                STATUS_MARKER_COLORS.free,
               ],
             }}
           />
@@ -270,7 +257,7 @@ function StatusLegend() {
           <div key={status} className="flex items-center gap-2">
             <span
               className="h-2.5 w-2.5 rounded-full border border-white"
-              style={{ backgroundColor: STATUS_COLORS[status] }}
+              style={{ backgroundColor: STATUS_MARKER_COLORS[status] }}
             />
             <span>{STATUS_LABELS[status]}</span>
           </div>

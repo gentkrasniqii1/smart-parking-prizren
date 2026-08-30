@@ -10,14 +10,8 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReserveSpotForm } from "./reserve-spot-form";
-import type { Spot, SpotStatus } from "@/lib/types";
-
-const STATUS_LABELS: Record<SpotStatus, string> = {
-  free: "I lirë",
-  occupied: "I zënë",
-  reserved: "I rezervuar",
-  disabled: "Jashtë funksionit",
-};
+import type { Spot } from "@/lib/types";
+import { STATUS_LABELS } from "@/lib/status-colors";
 
 const ZONE_IDS_EMPTY: string[] = [];
 

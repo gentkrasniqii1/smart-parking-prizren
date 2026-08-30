@@ -12,6 +12,7 @@ import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Spot, SpotStatus, Zone } from "@/lib/types";
+import { STATUS_LABELS } from "@/lib/status-colors";
 
 const STATUS_OPTIONS: SpotStatus[] = [
   "free",
@@ -19,12 +20,6 @@ const STATUS_OPTIONS: SpotStatus[] = [
   "reserved",
   "disabled",
 ];
-const STATUS_LABELS: Record<SpotStatus, string> = {
-  free: "I lirë",
-  occupied: "I zënë",
-  reserved: "I rezervuar",
-  disabled: "Jashtë funksionit",
-};
 
 export function SpotsPanel() {
   const zonesQuery = useZones();

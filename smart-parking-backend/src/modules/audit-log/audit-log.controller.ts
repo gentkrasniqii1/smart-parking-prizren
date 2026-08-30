@@ -1,9 +1,12 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuditLogService } from './audit-log.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 
+@ApiTags('audit-logs')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 @Controller('audit-logs')

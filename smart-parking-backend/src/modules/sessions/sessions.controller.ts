@@ -7,12 +7,15 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SessionsService } from './sessions.service.js';
 import { CheckInDto } from './dto/check-in.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { RequestUser } from '../auth/types/request-user.type.js';
 
+@ApiTags('sessions')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('sessions')
 export class SessionsController {

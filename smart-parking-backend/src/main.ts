@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 
 async function bootstrap() {
@@ -19,6 +20,20 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // E aktivizuar gjithmonë (jo vetëm dev) — projekt portofoli, dokumentimi i
+  // API-t është pjesë e dorëzimit, jo sekret prodhimi.
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Smart Parking Prizren API')
+    .setDescription(
+      'REST API për platformën e parkimit inteligjent në Prizren — zona/spote (PostGIS), rezervime, check-in/out, njoftime live (WebSocket), analitika admin.',
+    )
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, swaggerDocument);
+
   await app.listen(process.env.PORT ?? 3000);
 }
 await bootstrap();

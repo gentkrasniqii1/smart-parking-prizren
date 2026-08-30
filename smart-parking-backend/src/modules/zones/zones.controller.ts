@@ -11,6 +11,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ZonesService } from './zones.service.js';
 import { CreateZoneDto } from './dto/create-zone.dto.js';
 import { UpdateZoneDto } from './dto/update-zone.dto.js';
@@ -20,6 +21,7 @@ import { Roles } from '../../common/decorators/roles.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { RequestUser } from '../auth/types/request-user.type.js';
 
+@ApiTags('zones')
 @Controller('zones')
 export class ZonesController {
   constructor(private readonly zonesService: ZonesService) {}
@@ -34,6 +36,7 @@ export class ZonesController {
     return this.zonesService.findOne(id);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post()
@@ -41,6 +44,7 @@ export class ZonesController {
     return this.zonesService.create(dto, user.userId);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id')
@@ -52,6 +56,7 @@ export class ZonesController {
     return this.zonesService.update(id, dto, user.userId);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Delete(':id')

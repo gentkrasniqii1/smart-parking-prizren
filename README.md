@@ -14,6 +14,7 @@ Real-time smart parking platform for the city of Prizren, Kosovo. Live spot avai
 - 🔔 **Live notifications** — check-in/out, reservation confirmations, and 15-min-before reminders pushed over the same authenticated WebSocket
 - 📊 **Advanced analytics** — occupancy heatmap and peak-hours chart over PostGIS + sensor/session data
 - 🔐 **Role-based access** — citizen / attendant / admin, JWT auth with refresh tokens
+- 📚 **Interactive API docs** — full OpenAPI/Swagger UI for every endpoint, generated from the same DTOs that validate requests
 
 ## Tech Stack
 
@@ -28,6 +29,7 @@ Real-time smart parking platform for the city of Prizren, Kosovo. Live spot avai
 - WebSocket Gateway (Socket.io) · Redis pub/sub
 - PostgreSQL + PostGIS · Prisma ORM
 - JWT auth (access + refresh) · RBAC
+- OpenAPI/Swagger docs (`@nestjs/swagger`) · vitest + supertest (unit + e2e)
 
 **Infra**
 - Docker Compose (local dev)
@@ -42,7 +44,40 @@ smart-parking-prizren/
 └── docker-compose.yml        # Postgres+PostGIS, Redis, backend, frontend
 ```
 
-Real-time updates flow: sensor simulator / citizen check-in → Postgres write → Redis pub/sub → NestJS Gateway → WebSocket broadcast to clients in the relevant zone room → map updates live on the frontend.
+Real-time updates flow: sensor simulator / citizen check-in → Postgres write → Redis pub/sub → NestJS Gateway → WebSocket broadcast to clients in the relevant zone room → map updates live on the frontend. Reservation and check-in/out events reuse the exact same pub/sub → Gateway pipeline to push live notifications into a private per-user room — one real-time backbone for both features, not two.
+
+```mermaid
+flowchart LR
+    subgraph Sources["Data sources"]
+        Sensor["Sensor simulator<br/>(@Interval, free⇄occupied)"]
+        Checkin["Citizen check-in / check-out"]
+        Resv["Reservation created / cancelled"]
+    end
+
+    subgraph Backend["NestJS backend"]
+        DB[("PostgreSQL + PostGIS")]
+        Redis{{"Redis Pub/Sub"}}
+        GW["WebSocket Gateway"]
+    end
+
+    subgraph Clients["Frontend (Next.js)"]
+        ZoneRoom["Zone room<br/>(public live map)"]
+        UserRoom["Private user room<br/>(JWT-authenticated)"]
+    end
+
+    Sensor --> DB
+    Checkin --> DB
+    Sensor -- "publish spot:update" --> Redis
+    Checkin -- "publish spot:update" --> Redis
+    Resv -- "publish notification" --> Redis
+
+    Redis --> GW
+    GW -- "spot:update" --> ZoneRoom
+    GW -- "notification:new" --> UserRoom
+
+    ZoneRoom --> Patch["React Query cache patch<br/>(setQueryData, no refetch)"]
+    Patch --> Flash["Live map flash animation"]
+```
 
 ## Getting Started
 
@@ -68,7 +103,7 @@ npm install
 npm run dev
 ```
 
-Frontend runs at `http://localhost:3000`, backend API at `http://localhost:3001`.
+Frontend runs at `http://localhost:3000`, backend API at `http://localhost:3001` — interactive API docs (Swagger UI) at `http://localhost:3001/docs`.
 
 ## Deployment
 
@@ -102,7 +137,7 @@ docker build --build-arg NEXT_PUBLIC_API_URL=http://localhost:3001 --build-arg N
 - [x] Faza 10 — Polish UI/UX (basemap real, loading skeletons, nav mobile)
 - [x] Faza 11 — Testim backend (unit + e2e, vitest+supertest)
 - [x] Faza 12 — Dockerizim final (prod images multi-stage) + udhëzues deploy
-- [ ] Faza 13 — Dokumentim
+- [x] Faza 13 — Dokumentim (Swagger/OpenAPI + diagram arkitekture)
 
 ## Live Demo
 

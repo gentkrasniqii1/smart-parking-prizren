@@ -1,10 +1,13 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service.js';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 
+@ApiTags('admin')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 @Controller('admin')

@@ -8,6 +8,7 @@ import {
   Get,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -22,6 +23,7 @@ import type {
 import { toSafeUser } from '../users/user.mapper.js';
 import { UsersService } from '../users/users.service.js';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -44,6 +46,7 @@ export class AuthController {
     return { user: toSafeUser(user), ...tokens };
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -51,6 +54,7 @@ export class AuthController {
     return this.authService.refreshTokens(user.userId, user.refreshToken);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -58,6 +62,7 @@ export class AuthController {
     await this.authService.logout(user.userId);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@CurrentUser() user: RequestUser) {

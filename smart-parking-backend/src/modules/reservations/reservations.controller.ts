@@ -9,28 +9,33 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ReservationsService } from './reservations.service.js';
 import { CreateReservationDto } from './dto/create-reservation.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { RequestUser } from '../auth/types/request-user.type.js';
 
+@ApiTags('reservations')
 @Controller('reservations')
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post()
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateReservationDto) {
     return this.reservationsService.create(user.userId, dto);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
   findMine(@CurrentUser() user: RequestUser) {
     return this.reservationsService.findMine(user.userId);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post(':id/cancel')
   @HttpCode(HttpStatus.OK)

@@ -12,6 +12,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SpotsService } from './spots.service.js';
 import { CreateSpotDto } from './dto/create-spot.dto.js';
 import { UpdateSpotDto } from './dto/update-spot.dto.js';
@@ -22,6 +23,7 @@ import { Roles } from '../../common/decorators/roles.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { RequestUser } from '../auth/types/request-user.type.js';
 
+@ApiTags('spots')
 @Controller('spots')
 export class SpotsController {
   constructor(private readonly spotsService: SpotsService) {}
@@ -36,6 +38,7 @@ export class SpotsController {
     return this.spotsService.findOne(id);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post()
@@ -43,6 +46,7 @@ export class SpotsController {
     return this.spotsService.create(dto, user.userId);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id')
@@ -54,6 +58,7 @@ export class SpotsController {
     return this.spotsService.update(id, dto, user.userId);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Delete(':id')

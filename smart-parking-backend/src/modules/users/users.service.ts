@@ -116,4 +116,20 @@ export class UsersService {
       },
     });
   }
+
+  findAllWithCounts() {
+    return this.prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: { select: { reservations: true, sessions: true } },
+      },
+    });
+  }
+
+  updateRole(userId: string, role: Role): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { role },
+    });
+  }
 }

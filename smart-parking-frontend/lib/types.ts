@@ -80,6 +80,16 @@ export interface ReservationWindow {
   endTime: string;
 }
 
+export interface AdminUserListItem {
+  id: string;
+  email: string;
+  role: Role;
+  emailVerified: boolean;
+  createdAt: string;
+  reservationCount: number;
+  sessionCount: number;
+}
+
 export interface AdminStats {
   totalZones: number;
   totalSpots: number;

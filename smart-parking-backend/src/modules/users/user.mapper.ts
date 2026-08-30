@@ -17,3 +17,20 @@ export function toSafeUser(user: User): SafeUser {
     createdAt: user.createdAt,
   };
 }
+
+export interface AdminUserListItem extends SafeUser {
+  reservationCount: number;
+  sessionCount: number;
+}
+
+type UserWithCounts = User & {
+  _count: { reservations: number; sessions: number };
+};
+
+export function toAdminUserListItem(user: UserWithCounts): AdminUserListItem {
+  return {
+    ...toSafeUser(user),
+    reservationCount: user._count.reservations,
+    sessionCount: user._count.sessions,
+  };
+}

@@ -10,6 +10,7 @@ import {
   PanelLeftOpen,
   ScrollText,
   SquareParking,
+  Users,
 } from "lucide-react";
 import { useUiStore } from "@/store/useUiStore";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,10 @@ const SECTIONS: NavSection[] = [
   },
   {
     label: "Administrim",
-    items: [{ href: "/admin/audit-log", label: "Audit Log", icon: ScrollText }],
+    items: [
+      { href: "/admin/users", label: "Përdoruesit", icon: Users },
+      { href: "/admin/audit-log", label: "Audit Log", icon: ScrollText },
+    ],
   },
 ];
 

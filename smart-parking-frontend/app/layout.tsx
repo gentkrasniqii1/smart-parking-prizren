@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Header } from "@/components/nav/Header";
+import { Footer } from "@/components/nav/Footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,11 +28,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="flex min-h-screen flex-col">
         <ThemeProvider>
           <QueryProvider>
             <Header />
-            {children}
+            <div className="flex flex-1 flex-col">{children}</div>
+            <Footer />
           </QueryProvider>
         </ThemeProvider>
       </body>

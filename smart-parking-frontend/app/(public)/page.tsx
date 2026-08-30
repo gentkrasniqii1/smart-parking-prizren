@@ -18,7 +18,7 @@ export default function PublicMapPage() {
   useParkingSocket(zoneIds);
 
   return (
-    <main className="flex min-h-screen flex-col gap-4 p-4 md:p-8">
+    <main className="flex flex-1 flex-col gap-4 p-4 md:p-8">
       <div>
         <h1 className="text-2xl font-semibold">Smart Parking Prizren</h1>
         <p className="text-muted-foreground">

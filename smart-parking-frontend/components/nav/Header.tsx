@@ -31,6 +31,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/nav/ThemeToggle";
+import { LiveIndicator } from "@/components/realtime/LiveIndicator";
 import { cn } from "@/lib/utils";
 
 function initials(email: string) {
@@ -116,7 +117,8 @@ export function Header() {
         </Link>
 
         {/* Nav e plotë — vetëm sm+ */}
-        <div className="hidden items-center gap-1 sm:flex">
+        <div className="hidden items-center gap-3 sm:flex">
+          <LiveIndicator />
           <ThemeToggle />
 
           {isLoggedIn ? (
@@ -189,6 +191,7 @@ export function Header() {
             <SheetContent side="right">
               <SheetHeader>
                 <SheetTitle>Smart Parking Prizren</SheetTitle>
+                <LiveIndicator className="mt-1" />
               </SheetHeader>
               <nav className="flex flex-col gap-1 px-4">
                 {isLoggedIn ? (

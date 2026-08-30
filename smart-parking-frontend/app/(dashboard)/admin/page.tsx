@@ -1,13 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { useAuthStore } from "@/store/useAuthStore";
 import { useAdminStats } from "@/hooks/useAdminStats";
-import { ZonesPanel } from "./zones-panel";
-import { SpotsPanel } from "./spots-panel";
-import { AnalyticsPanel } from "./analytics-panel";
-import { AuditLogPanel } from "./audit-log-panel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LiveIndicator } from "@/components/realtime/LiveIndicator";
 import type { SpotStatus } from "@/lib/types";
 
 const STATUS_LABELS: Record<SpotStatus, string> = {
@@ -17,64 +12,44 @@ const STATUS_LABELS: Record<SpotStatus, string> = {
   disabled: "Jashtë funksionit",
 };
 
-export default function AdminDashboardPage() {
-  const user = useAuthStore((state) => state.user);
-  const isAdmin = user?.role === "admin";
-  const statsQuery = useAdminStats(isAdmin);
-
-  if (!user) {
-    return (
-      <main className="p-8">
-        <p>
-          Duhet të{" "}
-          <Link href="/login" className="underline">
-            kyçesh
-          </Link>{" "}
-          si administrator.
-        </p>
-      </main>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <main className="p-8">
-        <p className="text-destructive">
-          S&apos;ke akses te ky panel (vetëm administratorë).
-        </p>
-      </main>
-    );
-  }
+export default function AdminOverviewPage() {
+  const statsQuery = useAdminStats(true);
+  const data = statsQuery.data;
+  const occupancyRate =
+    data && data.totalSpots > 0
+      ? Math.round((data.spotsByStatus.occupied / data.totalSpots) * 1000) / 10
+      : null;
 
   return (
-    <main className="flex flex-col gap-8 p-4 md:p-8">
-      <h1 className="text-2xl font-semibold">Paneli i Administratorit</h1>
+    <div className="flex flex-col gap-6">
+      <div className="hidden items-center justify-between md:flex">
+        <h1 className="text-2xl font-semibold">Paneli i Administratorit</h1>
+        <LiveIndicator />
+      </div>
+      <h1 className="text-2xl font-semibold md:hidden">Përmbledhje</h1>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Përmbledhje</h2>
         {statsQuery.isLoading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-7">
+            {Array.from({ length: 7 }).map((_, i) => (
               <Skeleton key={i} className="h-[58px] rounded-md" />
             ))}
           </div>
-        ) : statsQuery.data ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
-            <StatCard label="Zona" value={statsQuery.data.totalZones} />
-            <StatCard label="Spote" value={statsQuery.data.totalSpots} />
+        ) : data ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-7">
+            <StatCard label="Zona" value={data.totalZones} />
+            <StatCard label="Spote" value={data.totalSpots} />
             <StatCard
-              label="Check-in aktive"
-              value={statsQuery.data.activeSessions}
+              label="Shkalla e zënies"
+              value={occupancyRate !== null ? `${occupancyRate}%` : "—"}
             />
-            <StatCard
-              label="Rezervime aktive"
-              value={statsQuery.data.activeReservations}
-            />
+            <StatCard label="Check-in aktive" value={data.activeSessions} />
+            <StatCard label="Rezervime aktive" value={data.activeReservations} />
             {(Object.keys(STATUS_LABELS) as SpotStatus[]).map((status) => (
               <StatCard
                 key={status}
                 label={STATUS_LABELS[status]}
-                value={statsQuery.data.spotsByStatus[status]}
+                value={data.spotsByStatus[status]}
               />
             ))}
           </div>
@@ -82,19 +57,14 @@ export default function AdminDashboardPage() {
           <p className="text-destructive">S&apos;u ngarkuan dot statistikat.</p>
         )}
       </section>
-
-      <ZonesPanel />
-      <SpotsPanel />
-      <AnalyticsPanel />
-      <AuditLogPanel />
-    </main>
+    </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-md border p-3">
-      <p className="text-2xl font-semibold">{value}</p>
+      <p className="text-2xl font-semibold tabular-nums">{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );

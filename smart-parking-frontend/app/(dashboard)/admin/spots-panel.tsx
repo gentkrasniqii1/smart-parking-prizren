@@ -118,7 +118,7 @@ export function SpotsPanel() {
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium">Spotet</h2>
+        <h1 className="text-2xl font-semibold">Vendparkimet</h1>
         <Button
           size="sm"
           onClick={() => setCreateOpen(true)}

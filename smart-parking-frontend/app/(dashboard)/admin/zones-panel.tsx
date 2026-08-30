@@ -106,7 +106,7 @@ export function ZonesPanel() {
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium">Zonat</h2>
+        <h1 className="text-2xl font-semibold">Zonat</h1>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           Shto zonë
         </Button>

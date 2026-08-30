@@ -28,7 +28,7 @@ export function AuditLogPanel() {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-medium">Audit Log</h2>
+      <h1 className="text-2xl font-semibold">Audit Log</h1>
 
       {auditLogsQuery.isLoading ? (
         <div className="flex flex-col gap-2">

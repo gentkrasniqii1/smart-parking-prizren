@@ -7,9 +7,10 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy.js';
 import { GoogleStrategy } from './strategies/google.strategy.js';
 import { UsersModule } from '../users/users.module.js';
 import { AuditLogModule } from '../audit-log/audit-log.module.js';
+import { EmailModule } from '../email/email.module.js';
 
 @Module({
-  imports: [UsersModule, JwtModule.register({}), AuditLogModule],
+  imports: [UsersModule, JwtModule.register({}), AuditLogModule, EmailModule],
   controllers: [AuthController],
   providers: [AuthService, JwtAccessStrategy, JwtRefreshStrategy, GoogleStrategy],
 })

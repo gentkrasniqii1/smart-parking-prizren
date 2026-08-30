@@ -13,6 +13,15 @@ import { AppModule } from '../../src/app.module.js';
 // e spoteve gjatë testeve dhe do t'i bënin jo-deterministike (race me fixtures).
 export async function createTestApp(): Promise<INestApplication> {
   process.env.SENSOR_SIMULATOR_ENABLED = 'false';
+  // Njësoj si më sipër, POR string bosh, JO delete: dotenv (brenda
+  // ConfigModule.forRoot, ekzekutuar kur AppModule kompilohet më poshtë)
+  // s'i mbishkruan variablat EKZISTUESE — nëse e fshijmë (delete) në vend që
+  // ta vendosim, dotenv e rimbush menjëherë me vlerën reale nga .env dhe
+  // fix-i s'bën asgjë. register-i (auth/reservations/sessions.e2e-spec)
+  // krijon user-a reale dhe do të thërriste Resend-in e vërtetë me email-e
+  // testimi @example.com — Resend i refuzon (422) dhe s'thyen asgjë
+  // (EmailService s'hedh gabim), por harxhon kuota/log kot.
+  process.env.RESEND_API_KEY = '';
 
   const moduleFixture = await Test.createTestingModule({
     imports: [AppModule],

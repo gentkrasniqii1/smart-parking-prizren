@@ -82,7 +82,15 @@ function LoginForm() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="password">Fjalëkalimi</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Fjalëkalimi</Label>
+            <Link
+              href="/forgot-password"
+              className="text-xs font-medium text-primary underline underline-offset-4"
+            >
+              Harrove fjalëkalimin?
+            </Link>
+          </div>
           <PasswordInput
             id="password"
             autoComplete="current-password"

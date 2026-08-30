@@ -16,6 +16,9 @@ import type { Request, Response } from 'express';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
+import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
+import { ResetPasswordDto } from './dto/reset-password.dto.js';
+import { VerifyEmailDto } from './dto/verify-email.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { JwtRefreshGuard } from '../../common/guards/jwt-refresh.guard.js';
 import { GoogleAuthGuard } from '../../common/guards/google-auth.guard.js';
@@ -78,6 +81,44 @@ export class AuthController {
       throw new UnauthorizedException();
     }
     return toSafeUser(fullUser);
+  }
+
+  @RateLimit({ limit: 5, windowSec: 60 })
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.authService.forgotPassword(dto.email);
+    // Mesazh identik pavarësisht nëse email-i ekziston — mbrojtje kundër
+    // user enumeration (shih AuthService.forgotPassword).
+    return {
+      message:
+        'Nëse ekziston një llogari me këtë email, do të marrësh një lidhje rivendosjeje.',
+    };
+  }
+
+  @RateLimit({ limit: 5, windowSec: 60 })
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto.token, dto.password);
+    return { message: 'Fjalëkalimi u ndryshua me sukses.' };
+  }
+
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    await this.authService.verifyEmail(dto.token);
+    return { message: 'Email-i u verifikua me sukses.' };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @RateLimit({ limit: 3, windowSec: 60 })
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(@CurrentUser() user: RequestUser) {
+    await this.authService.resendVerificationEmail(user.userId);
+    return { message: 'Nëse email-i s\'është verifikuar ende, u ridërgua lidhja.' };
   }
 
   // Guard-i vetë e nis redirect-in te ekrani i pëlqimit të Google — nuk

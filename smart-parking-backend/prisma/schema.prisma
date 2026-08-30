@@ -27,6 +27,14 @@ model User {
   googleId           String?          @unique
   role               Role             @default(citizen)
   hashedRefreshToken String?
+  // Faza redesign (2026-08-30+): user-at e krijuar via Google janë verifikuar
+  // tashmë nga Google (emailVerified=true në krijim, shih AuthService); user-at
+  // lokalë fillojnë false dhe verifikohen përmes lidhjes së dërguar me Resend.
+  emailVerified               Boolean   @default(false)
+  emailVerificationTokenHash  String?
+  emailVerificationExpiresAt  DateTime?
+  passwordResetTokenHash      String?
+  passwordResetExpiresAt      DateTime?
   sessions           ParkingSession[]
   reservations       Reservation[]
   notifications      Notification[]
@@ -34,6 +42,8 @@ model User {
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
+  @@index([emailVerificationTokenHash])
+  @@index([passwordResetTokenHash])
   @@map("users")
 }
 

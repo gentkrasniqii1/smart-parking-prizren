@@ -23,6 +23,7 @@ export class UsersService {
     passwordHash?: string;
     googleId?: string;
     role?: Role;
+    emailVerified?: boolean;
   }): Promise<User> {
     return this.prisma.user.create({ data });
   }
@@ -41,6 +42,78 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id: userId },
       data: { hashedRefreshToken },
+    });
+  }
+
+  setEmailVerificationToken(
+    userId: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerificationTokenHash: tokenHash,
+        emailVerificationExpiresAt: expiresAt,
+      },
+    });
+  }
+
+  findByValidEmailVerificationToken(tokenHash: string): Promise<User | null> {
+    return this.prisma.user.findFirst({
+      where: {
+        emailVerificationTokenHash: tokenHash,
+        emailVerificationExpiresAt: { gt: new Date() },
+      },
+    });
+  }
+
+  markEmailVerified(userId: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerified: true,
+        emailVerificationTokenHash: null,
+        emailVerificationExpiresAt: null,
+      },
+    });
+  }
+
+  setPasswordResetToken(
+    userId: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: expiresAt,
+      },
+    });
+  }
+
+  findByValidPasswordResetToken(tokenHash: string): Promise<User | null> {
+    return this.prisma.user.findFirst({
+      where: {
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: { gt: new Date() },
+      },
+    });
+  }
+
+  // Rivendos fjalëkalimin dhe pastron token-in NJËKOHËSISHT me revokimin e
+  // refresh token-it — një rivendosje fjalëkalimi duhet të çkyçë çdo sesion
+  // tjetër aktiv (mbrojtje nëse llogaria ishte kompromentuar).
+  resetPassword(userId: string, passwordHash: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+        passwordResetTokenHash: null,
+        passwordResetExpiresAt: null,
+        hashedRefreshToken: null,
+      },
     });
   }
 }

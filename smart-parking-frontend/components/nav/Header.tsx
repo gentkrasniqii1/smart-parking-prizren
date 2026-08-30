@@ -3,9 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, LayoutDashboard, LogOut, Menu, SquareParking } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  Bell,
+  LayoutDashboard,
+  LogOut,
+  Mail,
+  Menu,
+  SquareParking,
+} from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { logout as apiLogout } from "@/lib/auth";
+import { logout as apiLogout, resendVerification } from "@/lib/auth";
 import { getSocket } from "@/lib/socket";
 import {
   useUnreadCount,
@@ -79,6 +88,13 @@ export function Header() {
   const unreadCountQuery = useUnreadCount(isLoggedIn);
   useNotificationsSocket(isLoggedIn);
   const unread = unreadCountQuery.data ?? 0;
+
+  const resendMutation = useMutation({
+    mutationFn: resendVerification,
+    onSuccess: () =>
+      toast.success("Lidhja e verifikimit u ridërgua — kontrollo email-in."),
+    onError: () => toast.error("S'u arrit të ridërgohej lidhja."),
+  });
 
   useEffect(() => {
     function onScroll() {
@@ -160,6 +176,20 @@ export function Header() {
                       {user.email}
                     </DropdownMenuLabel>
                   </DropdownMenuGroup>
+                  {!user.emailVerified && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        disabled={resendMutation.isPending}
+                        onClick={() => resendMutation.mutate()}
+                      >
+                        <Mail />
+                        {resendMutation.isPending
+                          ? "Duke ridërguar..."
+                          : "Ridërgo verifikimin e email-it"}
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem variant="destructive" onClick={handleLogout}>
                     <LogOut />

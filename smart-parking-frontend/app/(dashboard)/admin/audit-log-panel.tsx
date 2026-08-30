@@ -2,6 +2,14 @@
 
 import { useAuditLogs } from "@/hooks/useAuditLogs";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const ACTION_LABELS: Record<string, string> = {
   "auth.login": "Hyrje",
@@ -33,33 +41,33 @@ export function AuditLogPanel() {
           Ende s&apos;ka veprime të regjistruara.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-md border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left">
-              <tr>
-                <th className="px-3 py-2">Koha</th>
-                <th className="px-3 py-2">Veprimi</th>
-                <th className="px-3 py-2">Aktori</th>
-                <th className="px-3 py-2">Detaje</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="rounded-xl border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Koha</TableHead>
+                <TableHead>Veprimi</TableHead>
+                <TableHead>Aktori</TableHead>
+                <TableHead>Detaje</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {auditLogsQuery.data.map((log) => (
-                <tr key={log.id} className="border-t">
-                  <td className="px-3 py-2 whitespace-nowrap">
+                <TableRow key={log.id}>
+                  <TableCell className="text-muted-foreground">
                     {new Date(log.timestamp).toLocaleString("sq")}
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="font-medium">
                     {ACTION_LABELS[log.action] ?? log.action}
-                  </td>
-                  <td className="px-3 py-2">{log.actorEmail ?? "—"}</td>
-                  <td className="px-3 py-2 text-muted-foreground">
+                  </TableCell>
+                  <TableCell>{log.actorEmail ?? "—"}</TableCell>
+                  <TableCell className="max-w-xs truncate text-muted-foreground">
                     {log.metadata ? JSON.stringify(log.metadata) : ""}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </section>

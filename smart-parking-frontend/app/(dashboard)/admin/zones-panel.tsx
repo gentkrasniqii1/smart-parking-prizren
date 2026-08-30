@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import {
   useZones,
   useCreateZone,
@@ -10,32 +11,106 @@ import {
 import { useSpots } from "@/hooks/useSpots";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { SortableHeader } from "@/components/dashboard/SortableHeader";
+import { DataTablePagination } from "@/components/dashboard/DataTablePagination";
 import type { Zone } from "@/lib/types";
+
+const PAGE_SIZE = 5;
+type SortKey = "name" | "spotCount";
 
 export function ZonesPanel() {
   const zonesQuery = useZones();
   const spotsQuery = useSpots();
-  const [showCreate, setShowCreate] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editingZone, setEditingZone] = useState<Zone | null>(null);
+  const [deletingZone, setDeletingZone] = useState<Zone | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(0);
+  const deleteZone = useDeleteZone();
 
-  const spotCountByZone = new Map<string, number>();
-  for (const spot of spotsQuery.data ?? []) {
-    spotCountByZone.set(
-      spot.zoneId,
-      (spotCountByZone.get(spot.zoneId) ?? 0) + 1,
-    );
+  const spotCountByZone = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const spot of spotsQuery.data ?? []) {
+      map.set(spot.zoneId, (map.get(spot.zoneId) ?? 0) + 1);
+    }
+    return map;
+  }, [spotsQuery.data]);
+
+  const rows = useMemo(() => {
+    const zones = zonesQuery.data ?? [];
+    const withCount = zones.map((zone) => ({
+      zone,
+      spotCount: spotCountByZone.get(zone.id) ?? 0,
+    }));
+    const sorted = [...withCount].sort((a, b) => {
+      const cmp =
+        sortKey === "name"
+          ? a.zone.name.localeCompare(b.zone.name)
+          : a.spotCount - b.spotCount;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return sorted;
+  }, [zonesQuery.data, spotCountByZone, sortKey, sortDir]);
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const pageRows = rows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
+  function handleSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+    setPage(0);
+  }
+
+  function handleDeleteConfirm() {
+    if (!deletingZone) {
+      return;
+    }
+    deleteZone.mutate(deletingZone.id, {
+      onSuccess: () => setDeletingZone(null),
+    });
   }
 
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium">Zonat</h2>
-        <Button size="sm" onClick={() => setShowCreate((v) => !v)}>
-          {showCreate ? "Mbyll" : "Shto zonë"}
+        <Button size="sm" onClick={() => setCreateOpen(true)}>
+          Shto zonë
         </Button>
       </div>
-
-      {showCreate && <CreateZoneForm onDone={() => setShowCreate(false)} />}
 
       {zonesQuery.isLoading ? (
         <div className="flex flex-col gap-2">
@@ -43,100 +118,170 @@ export function ZonesPanel() {
             <Skeleton key={i} className="h-11 w-full" />
           ))}
         </div>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Ende s&apos;ka zona.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {(zonesQuery.data ?? []).map((zone) => (
-            <ZoneRow
-              key={zone.id}
-              zone={zone}
-              spotCount={spotCountByZone.get(zone.id) ?? 0}
-            />
-          ))}
-        </ul>
+        <div className="rounded-xl border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortableHeader
+                  sortKey="name"
+                  activeKey={sortKey}
+                  direction={sortDir}
+                  onSort={handleSort}
+                >
+                  Emri
+                </SortableHeader>
+                <SortableHeader
+                  sortKey="spotCount"
+                  activeKey={sortKey}
+                  direction={sortDir}
+                  onSort={handleSort}
+                >
+                  Spote
+                </SortableHeader>
+                <TableHead className="text-right">Veprime</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageRows.map(({ zone, spotCount }) => (
+                <TableRow key={zone.id}>
+                  <TableCell className="font-medium">{zone.name}</TableCell>
+                  <TableCell>{spotCount}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Edito"
+                        onClick={() => setEditingZone(zone)}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Fshij"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeletingZone(zone)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
+
+      <DataTablePagination
+        page={page}
+        pageCount={pageCount}
+        onPageChange={setPage}
+        totalItems={rows.length}
+      />
+
+      <CreateZoneDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <EditZoneDialog zone={editingZone} onOpenChange={() => setEditingZone(null)} />
+
+      <AlertDialog
+        open={!!deletingZone}
+        onOpenChange={(open) => !open && setDeletingZone(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Fshi zonën?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Zona &quot;{deletingZone?.name}&quot; dhe të gjitha spotet e saj
+              do të fshihen përgjithmonë. Ky veprim s&apos;mund të kthehet
+              mbrapsht.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anulo</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleteZone.isPending}
+            >
+              Fshij
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
 
-function ZoneRow({ zone, spotCount }: { zone: Zone; spotCount: number }) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(zone.name);
+function EditZoneDialog({
+  zone,
+  onOpenChange,
+}: {
+  zone: Zone | null;
+  onOpenChange: (open: boolean) => void;
+}) {
   const updateName = useUpdateZoneName();
-  const deleteZone = useDeleteZone();
+  const [name, setName] = useState(zone?.name ?? "");
 
-  function handleSave() {
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!zone) {
+      return;
+    }
     updateName.mutate(
       { id: zone.id, name },
-      { onSuccess: () => setEditing(false) },
+      { onSuccess: () => onOpenChange(false) },
     );
   }
 
   return (
-    <li className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
-      {editing ? (
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="flex-1 rounded border px-2 py-1"
-        />
-      ) : (
-        <span className="font-medium">
-          {zone.name}{" "}
-          <span className="text-muted-foreground">({spotCount} spote)</span>
-        </span>
-      )}
+    <Dialog open={!!zone} onOpenChange={onOpenChange}>
+      <DialogContent key={zone?.id}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>Riemërto zonën</DialogTitle>
+          </DialogHeader>
 
-      <div className="flex gap-2">
-        {editing ? (
-          <>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="edit-zone-name">Emri</Label>
+            <Input
+              id="edit-zone-name"
+              required
+              defaultValue={zone?.name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          <DialogFooter>
             <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={updateName.isPending}
-            >
-              Ruaj
-            </Button>
-            <Button
-              size="sm"
+              type="button"
               variant="outline"
-              onClick={() => setEditing(false)}
+              onClick={() => onOpenChange(false)}
             >
               Anulo
             </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setEditing(true)}
-            >
-              Riemërto
+            <Button type="submit" disabled={updateName.isPending}>
+              Ruaj
             </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => {
-                if (
-                  confirm(
-                    `Të fshihet zona "${zone.name}" bashkë me spotet e saj?`,
-                  )
-                ) {
-                  deleteZone.mutate(zone.id);
-                }
-              }}
-              disabled={deleteZone.isPending}
-            >
-              Fshij
-            </Button>
-          </>
-        )}
-      </div>
-    </li>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function CreateZoneForm({ onDone }: { onDone: () => void }) {
+function CreateZoneDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const [name, setName] = useState("");
   const [minLng, setMinLng] = useState("20.74");
   const [minLat, setMinLat] = useState("42.21");
@@ -144,6 +289,15 @@ function CreateZoneForm({ onDone }: { onDone: () => void }) {
   const [maxLat, setMaxLat] = useState("42.212");
   const [error, setError] = useState<string | null>(null);
   const createZone = useCreateZone();
+
+  function reset() {
+    setName("");
+    setMinLng("20.74");
+    setMinLat("42.21");
+    setMaxLng("20.742");
+    setMaxLat("42.212");
+    setError(null);
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -170,7 +324,8 @@ function CreateZoneForm({ onDone }: { onDone: () => void }) {
           ],
         },
       });
-      onDone();
+      reset();
+      onOpenChange(false);
     } catch (err) {
       setError(
         err instanceof ApiError ? "S'u krijua dot zona" : "Diçka shkoi keq",
@@ -179,42 +334,60 @@ function CreateZoneForm({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3"
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) reset();
+        onOpenChange(next);
+      }}
     >
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium">Emri</label>
-        <input
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="rounded border px-2 py-1 text-sm"
-        />
-      </div>
+      <DialogContent>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>Zonë e re</DialogTitle>
+          </DialogHeader>
 
-      <p className="text-xs text-muted-foreground">
-        Kufijtë e drejtkëndëshit (zonë e thjeshtë drejtkëndore — vizatimi mbi
-        hartë vjen si polish i mëvonshëm)
-      </p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <LabeledInput label="Min gjatësi" value={minLng} onChange={setMinLng} />
-        <LabeledInput label="Min gjerësi" value={minLat} onChange={setMinLat} />
-        <LabeledInput label="Max gjatësi" value={maxLng} onChange={setMaxLng} />
-        <LabeledInput label="Max gjerësi" value={maxLat} onChange={setMaxLat} />
-      </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="new-zone-name">Emri</Label>
+            <Input
+              id="new-zone-name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
+          <p className="text-xs text-muted-foreground">
+            Kufijtë e drejtkëndëshit (zonë e thjeshtë drejtkëndore — vizatimi
+            mbi hartë vjen si polish i mëvonshëm)
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <LabeledInput label="Min gjatësi" value={minLng} onChange={setMinLng} />
+            <LabeledInput label="Min gjerësi" value={minLat} onChange={setMinLat} />
+            <LabeledInput label="Max gjatësi" value={maxLng} onChange={setMaxLng} />
+            <LabeledInput label="Max gjerësi" value={maxLat} onChange={setMaxLat} />
+          </div>
 
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={createZone.isPending}>
-          Krijo
-        </Button>
-        <Button type="button" size="sm" variant="outline" onClick={onDone}>
-          Anulo
-        </Button>
-      </div>
-    </form>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                reset();
+                onOpenChange(false);
+              }}
+            >
+              Anulo
+            </Button>
+            <Button type="submit" disabled={createZone.isPending}>
+              Krijo
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -228,15 +401,16 @@ function LabeledInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-medium">{label}</label>
-      <input
+    <div className="flex flex-col gap-1.5">
+      <Label className="text-xs font-normal text-muted-foreground">
+        {label}
+      </Label>
+      <Input
         required
         type="number"
         step="any"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded border px-2 py-1 text-sm"
       />
     </div>
   );

@@ -1,6 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { useHeatmap, usePeakHours } from "@/hooks/useAnalytics";
 import { HeatmapMap } from "@/components/map/HeatmapMap";
 import { Button } from "@/components/ui/button";
@@ -13,11 +22,6 @@ export function AnalyticsPanel() {
   const [days, setDays] = useState(7);
   const heatmapQuery = useHeatmap(days, true);
   const peakHoursQuery = usePeakHours(days, true);
-
-  const maxCount = Math.max(
-    1,
-    ...(peakHoursQuery.data?.map((bucket) => bucket.count) ?? [0]),
-  );
 
   return (
     <section className="flex flex-col gap-3">
@@ -58,25 +62,47 @@ export function AnalyticsPanel() {
           {peakHoursQuery.isLoading ? (
             <Skeleton className="h-[360px] w-full" />
           ) : peakHoursQuery.data ? (
-            <div className="flex h-[360px] items-end gap-[2px] rounded-lg border p-3">
-              {peakHoursQuery.data.map((bucket) => (
-                <div
-                  key={bucket.hour}
-                  className="flex flex-1 flex-col items-center justify-end gap-1"
-                  title={`Ora ${bucket.hour}:00 — ${bucket.count} aktivitete`}
-                >
-                  <div
-                    className="w-full rounded-t bg-blue-500"
-                    style={{
-                      height: `${(bucket.count / maxCount) * CHART_HEIGHT_PX}px`,
-                      minHeight: bucket.count > 0 ? "2px" : "0px",
-                    }}
+            <div className="rounded-xl border p-3">
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT_PX}>
+                <BarChart data={peakHoursQuery.data}>
+                  <CartesianGrid
+                    vertical={false}
+                    stroke="var(--color-border)"
                   />
-                  <span className="text-[10px] text-muted-foreground">
-                    {bucket.hour}
-                  </span>
-                </div>
-              ))}
+                  <XAxis
+                    dataKey="hour"
+                    tickFormatter={(hour: number) => `${hour}`}
+                    tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={{ stroke: "var(--color-border)" }}
+                    interval={1}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={28}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "var(--color-muted)" }}
+                    contentStyle={{
+                      background: "var(--color-popover)",
+                      color: "var(--color-popover-foreground)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--radius-md)",
+                      fontSize: 12,
+                    }}
+                    labelFormatter={(hour) => `Ora ${hour}:00`}
+                    formatter={(value) => [value, "Aktivitete"]}
+                  />
+                  <Bar
+                    dataKey="count"
+                    fill="var(--color-chart-1)"
+                    radius={[3, 3, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           ) : (
             <p className="text-destructive">

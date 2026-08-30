@@ -4,6 +4,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Header } from "@/components/nav/Header";
 import { Footer } from "@/components/nav/Footer";
+import { Toaster } from "@/components/providers/Toaster";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Header />
             <div className="flex flex-1 flex-col">{children}</div>
             <Footer />
+            <Toaster />
           </QueryProvider>
         </ThemeProvider>
       </body>

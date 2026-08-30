@@ -12,9 +12,12 @@ import {
 import type { FeatureCollection, Point, Polygon } from "geojson";
 import type { LngLatBoundsLike } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 import type { Spot, SpotStatus, Zone } from "@/lib/types";
 import { BASEMAP_STYLE } from "@/lib/map-style";
 import { STATUS_LABELS, STATUS_MARKER_COLORS } from "@/lib/status-colors";
+import { cn } from "@/lib/utils";
 
 const PRIZREN_CENTER = { longitude: 20.7397, latitude: 42.2139 };
 const FLASH_DURATION_MS = 1200;
@@ -23,6 +26,9 @@ interface ParkingMapProps {
   zones: Zone[];
   spots: Spot[];
   height?: string;
+  /** Ndryshimi i kësaj vlere (p.sh. zoneId i filtrit) e bën hartën të rifitojë
+   * bounds-in te zonat/spotet aktuale — pa reaguar te çdo update i vogël live. */
+  fitKey?: string;
 }
 
 function zonesToFeatureCollection(
@@ -89,6 +95,7 @@ export function ParkingMap({
   zones,
   spots,
   height = "600px",
+  fitKey,
 }: ParkingMapProps) {
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const mapRef = useRef<MapRef>(null);
@@ -100,6 +107,24 @@ export function ParkingMap({
   const zonesData = useMemo(() => zonesToFeatureCollection(zones), [zones]);
   const spotsData = useMemo(() => spotsToFeatureCollection(spots), [spots]);
   const bounds = useMemo(() => computeBounds(zones, spots), [zones, spots]);
+  const boundsRef = useRef(bounds);
+  useEffect(() => {
+    boundsRef.current = bounds;
+  }, [bounds]);
+
+  // Rifit i hartës kur ndryshon filtri (fitKey) — jo në çdo update live të
+  // spoteve (initialViewState mbulon vetëm montimin e parë).
+  const isFirstFitRef = useRef(true);
+  useEffect(() => {
+    if (isFirstFitRef.current) {
+      isFirstFitRef.current = false;
+      return;
+    }
+    const map = mapRef.current;
+    if (map && boundsRef.current) {
+      map.fitBounds(boundsRef.current, { padding: 48, duration: 800 });
+    }
+  }, [fitKey]);
 
   // Animacion i vogël ("flash") kur një spot ndryshon status live — kërkesë
   // e §4 (CLAUDE.md): harta përditësohet pa refresh me animacion të dukshëm.
@@ -152,7 +177,8 @@ export function ParkingMap({
 
   function handleClick(event: MapLayerMouseEvent) {
     const feature = event.features?.[0];
-    if (!feature || feature.layer?.id !== "spots-circle") {
+    const layerId = feature?.layer?.id;
+    if (!feature || (layerId !== "spots-circle" && layerId !== "spots-halo")) {
       setSelectedSpot(null);
       return;
     }
@@ -177,7 +203,7 @@ export function ParkingMap({
               }
         }
         mapStyle={BASEMAP_STYLE}
-        interactiveLayerIds={["spots-circle"]}
+        interactiveLayerIds={["spots-circle", "spots-halo"]}
         onClick={handleClick}
       >
         <Source id="zones" type="geojson" data={zonesData}>
@@ -194,6 +220,35 @@ export function ParkingMap({
         </Source>
 
         <Source id="spots" type="geojson" data={spotsData}>
+          {/* Hale e zbutur poshtë rrethit kryesor — jep thellësi pa u mbështetur
+              te box-shadow (MapLibre s'e mbështet mbi canvas). */}
+          <Layer
+            id="spots-halo"
+            type="circle"
+            paint={{
+              "circle-radius": [
+                "case",
+                ["boolean", ["feature-state", "flash"], false],
+                20,
+                13,
+              ],
+              "circle-radius-transition": { duration: 300, delay: 0 },
+              "circle-opacity": 0.18,
+              "circle-color": [
+                "match",
+                ["get", "status"],
+                "free",
+                STATUS_MARKER_COLORS.free,
+                "occupied",
+                STATUS_MARKER_COLORS.occupied,
+                "reserved",
+                STATUS_MARKER_COLORS.reserved,
+                "disabled",
+                STATUS_MARKER_COLORS.disabled,
+                STATUS_MARKER_COLORS.free,
+              ],
+            }}
+          />
           <Layer
             id="spots-circle"
             type="circle"
@@ -227,6 +282,23 @@ export function ParkingMap({
               ],
             }}
           />
+          <Layer
+            id="spots-label"
+            type="symbol"
+            minzoom={16}
+            layout={{
+              "text-field": ["get", "code"],
+              "text-size": 10,
+              "text-offset": [0, 1.4],
+              "text-anchor": "top",
+              "text-font": ["Noto Sans Regular"],
+            }}
+            paint={{
+              "text-color": "#1f2937",
+              "text-halo-color": "#ffffff",
+              "text-halo-width": 1.2,
+            }}
+          />
         </Source>
 
         {selectedSpot && (
@@ -237,10 +309,25 @@ export function ParkingMap({
             closeOnClick={false}
             anchor="bottom"
           >
-            <div className="text-sm">
-              <p className="font-semibold">{selectedSpot.code}</p>
-              <p>{STATUS_LABELS[selectedSpot.status]}</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, y: 4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ type: "spring", duration: 0.25, bounce: 0.35 }}
+              className="flex items-center gap-2 py-0.5 text-sm"
+            >
+              <span
+                className="size-2 shrink-0 rounded-full"
+                style={{
+                  backgroundColor: STATUS_MARKER_COLORS[selectedSpot.status],
+                }}
+              />
+              <div>
+                <p className="font-semibold">{selectedSpot.code}</p>
+                <p className="text-xs text-muted-foreground">
+                  {STATUS_LABELS[selectedSpot.status]}
+                </p>
+              </div>
+            </motion.div>
           </Popup>
         )}
       </MapGL>
@@ -250,18 +337,38 @@ export function ParkingMap({
 }
 
 function StatusLegend() {
+  const [expanded, setExpanded] = useState(true);
+
   return (
     <div className="pointer-events-none absolute top-3 right-3 z-10">
-      <div className="pointer-events-auto flex flex-col gap-1 rounded-md border bg-background/90 p-2 text-xs shadow-sm">
-        {(Object.keys(STATUS_LABELS) as SpotStatus[]).map((status) => (
-          <div key={status} className="flex items-center gap-2">
-            <span
-              className="h-2.5 w-2.5 rounded-full border border-white"
-              style={{ backgroundColor: STATUS_MARKER_COLORS[status] }}
-            />
-            <span>{STATUS_LABELS[status]}</span>
+      <div className="pointer-events-auto overflow-hidden rounded-xl border bg-card/95 text-xs shadow-md backdrop-blur-sm">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="flex w-full items-center justify-between gap-3 px-3 py-2 font-medium"
+        >
+          Legjenda
+          <ChevronDown
+            className={cn(
+              "size-3.5 text-muted-foreground transition-transform",
+              expanded && "rotate-180",
+            )}
+          />
+        </button>
+        {expanded && (
+          <div className="flex flex-col gap-1.5 px-3 pb-2.5">
+            {(Object.keys(STATUS_LABELS) as SpotStatus[]).map((status) => (
+              <div key={status} className="flex items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 rounded-full border border-white"
+                  style={{ backgroundColor: STATUS_MARKER_COLORS[status] }}
+                />
+                <span>{STATUS_LABELS[status]}</span>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

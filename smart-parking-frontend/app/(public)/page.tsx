@@ -1,21 +1,64 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { ParkingMap } from "@/components/map/ParkingMap";
 import { useZones } from "@/hooks/useZones";
 import { useSpots } from "@/hooks/useSpots";
 import { useParkingSocket } from "@/hooks/useParkingSocket";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatsCards, StatsCardsSkeleton } from "@/components/dashboard/StatsCards";
+import { MapFilters } from "@/components/dashboard/MapFilters";
+import { STATUS_LABELS } from "@/lib/status-colors";
+import type { Spot, SpotStatus } from "@/lib/types";
+
+const ALL_STATUSES = new Set<SpotStatus>([
+  "free",
+  "occupied",
+  "reserved",
+  "disabled",
+]);
 
 export default function PublicMapPage() {
   const zonesQuery = useZones();
   const spotsQuery = useSpots();
+  const [zoneId, setZoneId] = useState<string | null>(null);
+  const [statuses, setStatuses] = useState<Set<SpotStatus>>(ALL_STATUSES);
 
   const zoneIds = useMemo(
     () => (zonesQuery.data ?? []).map((zone) => zone.id),
     [zonesQuery.data],
   );
-  useParkingSocket(zoneIds);
+
+  function handleSpotUpdate(spot: Spot) {
+    toast(`Spoti ${spot.code} tani është ${STATUS_LABELS[spot.status]}`);
+  }
+
+  useParkingSocket(zoneIds, handleSpotUpdate);
+
+  function toggleStatus(status: SpotStatus) {
+    setStatuses((current) => {
+      const next = new Set(current);
+      if (next.has(status)) {
+        next.delete(status);
+      } else {
+        next.add(status);
+      }
+      return next;
+    });
+  }
+
+  const zones = zonesQuery.data ?? [];
+  const spots = spotsQuery.data ?? [];
+
+  const filteredZones = zoneId ? zones.filter((z) => z.id === zoneId) : zones;
+  const filteredSpots = spots.filter(
+    (spot) =>
+      (!zoneId || spot.zoneId === zoneId) && statuses.has(spot.status),
+  );
+
+  const isLoading = zonesQuery.isLoading || spotsQuery.isLoading;
+  const isError = zonesQuery.isError || spotsQuery.isError;
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:p-8">
@@ -27,17 +70,34 @@ export default function PublicMapPage() {
         </p>
       </div>
 
-      {zonesQuery.isLoading || spotsQuery.isLoading ? (
+      {isLoading ? (
+        <StatsCardsSkeleton />
+      ) : (
+        <StatsCards zones={zones} spots={spots} />
+      )}
+
+      {!isLoading && !isError && (
+        <MapFilters
+          zones={zones}
+          zoneId={zoneId}
+          onZoneChange={setZoneId}
+          statuses={statuses}
+          onToggleStatus={toggleStatus}
+        />
+      )}
+
+      {isLoading ? (
         <Skeleton className="w-full" style={{ height: "70vh" }} />
-      ) : zonesQuery.isError || spotsQuery.isError ? (
+      ) : isError ? (
         <p className="text-destructive">
           S&apos;u arrit të ngarkohej harta. Provo përsëri.
         </p>
       ) : (
         <ParkingMap
-          zones={zonesQuery.data ?? []}
-          spots={spotsQuery.data ?? []}
+          zones={filteredZones}
+          spots={filteredSpots}
           height="70vh"
+          fitKey={zoneId ?? "all"}
         />
       )}
     </main>

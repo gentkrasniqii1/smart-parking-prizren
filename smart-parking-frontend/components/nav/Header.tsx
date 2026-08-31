@@ -20,6 +20,7 @@ import {
   useUnreadCount,
   useNotificationsSocket,
 } from "@/hooks/useNotifications";
+import { useActiveSession } from "@/hooks/useSessions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -88,6 +89,8 @@ export function Header() {
   const unreadCountQuery = useUnreadCount(isLoggedIn);
   useNotificationsSocket(isLoggedIn);
   const unread = unreadCountQuery.data ?? 0;
+  const activeSessionQuery = useActiveSession();
+  const hasActiveSession = !!activeSessionQuery.data;
 
   const resendMutation = useMutation({
     mutationFn: resendVerification,
@@ -140,6 +143,21 @@ export function Header() {
           {isLoggedIn ? (
             <>
               <NotificationBell unread={unread} />
+              {hasActiveSession && (
+                <Link
+                  href="/session"
+                  className={cn(
+                    buttonVariants({ variant: "ghost", size: "sm" }),
+                    "gap-1.5",
+                  )}
+                >
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-status-free-fg opacity-75" />
+                    <span className="relative inline-flex size-2 rounded-full bg-status-free-fg" />
+                  </span>
+                  Sesioni im
+                </Link>
+              )}
               <Link
                 href="/reservations"
                 className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
@@ -229,6 +247,19 @@ export function Header() {
                     <span className="mb-2 truncate text-sm text-muted-foreground">
                       {user.email}
                     </span>
+                    {hasActiveSession && (
+                      <SheetClose
+                        nativeButton={false}
+                        render={<Link href="/session" />}
+                        className="flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <span className="relative flex size-2">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-status-free-fg opacity-75" />
+                          <span className="relative inline-flex size-2 rounded-full bg-status-free-fg" />
+                        </span>
+                        Sesioni im
+                      </SheetClose>
+                    )}
                     <SheetClose
                       nativeButton={false}
                       render={<Link href="/reservations" />}

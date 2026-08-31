@@ -1,7 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { SpotStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { RedisService } from '../../redis/redis.service.js';
+import { RealtimeGateway } from '../realtime/realtime.gateway.js';
 import { GeoPointDto } from '../../common/dto/geo-point.dto.js';
+
+export interface ServiceHealth {
+  status: 'ok' | 'error';
+  latencyMs: number | null;
+}
+
+export interface SystemHealth {
+  api: { status: 'ok'; timestamp: string };
+  database: ServiceHealth;
+  redis: ServiceHealth;
+  websocket: { status: 'ok'; connectedClients: number };
+  sensorSimulator: { enabled: boolean };
+}
 
 export interface AdminStats {
   totalZones: number;
@@ -49,7 +64,43 @@ const EMPTY_STATUS_COUNTS: Record<SpotStatus, number> = {
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redisService: RedisService,
+    private readonly realtimeGateway: RealtimeGateway,
+  ) {}
+
+  async getSystemHealth(): Promise<SystemHealth> {
+    const [database, redis] = await Promise.all([
+      this.checkLatency(() => this.prisma.$queryRaw`SELECT 1`),
+      this.checkLatency(() => this.redisService.publisher.ping()),
+    ]);
+
+    return {
+      api: { status: 'ok', timestamp: new Date().toISOString() },
+      database,
+      redis,
+      websocket: {
+        status: 'ok',
+        connectedClients: this.realtimeGateway.getConnectedClientsCount(),
+      },
+      sensorSimulator: {
+        enabled: process.env.SENSOR_SIMULATOR_ENABLED !== 'false',
+      },
+    };
+  }
+
+  private async checkLatency(
+    check: () => Promise<unknown>,
+  ): Promise<ServiceHealth> {
+    const start = Date.now();
+    try {
+      await check();
+      return { status: 'ok', latencyMs: Date.now() - start };
+    } catch {
+      return { status: 'error', latencyMs: null };
+    }
+  }
 
   async getStats(): Promise<AdminStats> {
     const [

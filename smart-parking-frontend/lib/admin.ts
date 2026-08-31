@@ -1,8 +1,12 @@
 import { apiFetch } from "./api";
-import type { AdminStats, AdminUserListItem, Role } from "./types";
+import type { AdminStats, AdminUserListItem, Role, SystemHealth } from "./types";
 
 export function getAdminStats(): Promise<AdminStats> {
   return apiFetch<AdminStats>("/admin/stats");
+}
+
+export function getSystemHealth(): Promise<SystemHealth> {
+  return apiFetch<SystemHealth>("/admin/system-health");
 }
 
 export function getAdminUsers(): Promise<AdminUserListItem[]> {

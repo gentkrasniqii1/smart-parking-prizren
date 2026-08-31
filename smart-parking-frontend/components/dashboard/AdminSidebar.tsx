@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   BarChart3,
   LayoutDashboard,
   MapPin,
@@ -48,6 +49,12 @@ const SECTIONS: NavSection[] = [
     items: [
       { href: "/admin/users", label: "Përdoruesit", icon: Users },
       { href: "/admin/audit-log", label: "Audit Log", icon: ScrollText },
+    ],
+  },
+  {
+    label: "Sistemi",
+    items: [
+      { href: "/admin/system-health", label: "Gjendja e sistemit", icon: Activity },
     ],
   },
 ];

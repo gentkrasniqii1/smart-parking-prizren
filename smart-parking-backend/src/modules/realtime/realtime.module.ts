@@ -5,5 +5,6 @@ import { RealtimeGateway } from './realtime.gateway.js';
 @Module({
   imports: [JwtModule.register({})],
   providers: [RealtimeGateway],
+  exports: [RealtimeGateway],
 })
 export class RealtimeModule {}

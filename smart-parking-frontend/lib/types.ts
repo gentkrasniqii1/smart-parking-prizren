@@ -80,6 +80,19 @@ export interface ReservationWindow {
   endTime: string;
 }
 
+export interface ServiceHealth {
+  status: "ok" | "error";
+  latencyMs: number | null;
+}
+
+export interface SystemHealth {
+  api: { status: "ok"; timestamp: string };
+  database: ServiceHealth;
+  redis: ServiceHealth;
+  websocket: { status: "ok"; connectedClients: number };
+  sensorSimulator: { enabled: boolean };
+}
+
 export interface AdminUserListItem {
   id: string;
   email: string;

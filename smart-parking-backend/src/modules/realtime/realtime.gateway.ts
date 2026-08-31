@@ -111,4 +111,11 @@ export class RealtimeGateway
   ): void {
     void client.leave(payload.zoneId);
   }
+
+  // Përdorur nga AdminService.getSystemHealth() — numri real i klientëve të
+  // lidhur, jo i simuluar (§32/§39 e promptit: "asnjëherë mos fabriko gjendje
+  // sistemi").
+  getConnectedClientsCount(): number {
+    return this.server.sockets.sockets.size;
+  }
 }

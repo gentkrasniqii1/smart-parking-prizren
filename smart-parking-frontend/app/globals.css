@@ -151,4 +151,45 @@
   html {
     @apply font-sans;
   }
+
+  /* WCAG 2.3.3 / §37+§78: respekto preferencën e sistemit për lëvizje të
+     reduktuar. Animacionet tona janë komunikuese (flash i statusit, pulsim i
+     sesionit aktiv, spinner rilidhjeje), prandaj NUK i heqim plotësisht —
+     i bëjmë praktikisht të menjëhershme, që informacioni të mbetet i
+     përcjellë por pa lëvizje shqetësuese. `scroll-behavior` kthehet në auto
+     sepse smooth-scroll është shkak i njohur vertigoje. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Objektiv prekjeje: çdo kontroll interaktiv të paktën 24x24px (WCAG 2.5.8
+     AA). Butonat e navbar-it mobile janë tashmë 44px shprehimisht; kjo mbron
+     rastet e mbetura (ikona të vogla në tabela). */
+  @media (pointer: coarse) {
+    button,
+    [role="button"],
+    a[href] {
+      min-height: 24px;
+      min-width: 24px;
+    }
+  }
+}
+
+/* Klasë ndihmëse: kapërce te përmbajtja kryesore (skip-link) — e dukshme
+   vetëm kur merr fokus me tastierë (WCAG 2.4.1 "Bypass Blocks"). */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  z-index: 100;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 0.5rem;
 }

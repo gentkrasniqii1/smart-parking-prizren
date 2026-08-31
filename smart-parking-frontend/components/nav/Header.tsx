@@ -164,6 +164,17 @@ export function Header() {
               >
                 Rezervimet e mia
               </Link>
+              {user.role === "attendant" && (
+                <Link
+                  href="/attendant"
+                  className={cn(
+                    buttonVariants({ variant: "ghost", size: "icon" }),
+                  )}
+                  aria-label="Paneli i rojtarit"
+                >
+                  <LayoutDashboard className="size-4" />
+                </Link>
+              )}
               {user.role === "admin" && (
                 <Link
                   href="/admin"
@@ -267,6 +278,15 @@ export function Header() {
                     >
                       Rezervimet e mia
                     </SheetClose>
+                    {user.role === "attendant" && (
+                      <SheetClose
+                        nativeButton={false}
+                        render={<Link href="/attendant" />}
+                        className="flex min-h-11 items-center rounded-md px-2 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        Paneli i rojtarit
+                      </SheetClose>
+                    )}
                     {user.role === "admin" && (
                       <SheetClose
                         nativeButton={false}

@@ -18,6 +18,18 @@ export function createSpot(data: {
   });
 }
 
+/** Endpoint i ngushtë (vetëm status) i lejuar edhe për rolin `attendant` —
+ * shih SpotsController.updateStatus. */
+export function updateSpotStatusAsAttendant(
+  id: string,
+  status: SpotStatus,
+): Promise<Spot> {
+  return apiFetch<Spot>(`/spots/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
 export function updateSpotStatus(
   id: string,
   status: SpotStatus,

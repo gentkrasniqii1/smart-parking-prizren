@@ -18,8 +18,27 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Smart Parking Prizren",
-  description: "Platformë real-time për parkim inteligjent në Prizren",
+  title: {
+    default: "Smart Parking Prizren — Gjej vendparkim në kohë reale",
+    template: "%s · Smart Parking Prizren",
+  },
+  description:
+    "Gjej vendparkime të lira në Prizren, rezervo vendparkim dhe menaxho sesionin tënd të parkimit në kohë reale.",
+  applicationName: "Smart Parking Prizren",
+  openGraph: {
+    type: "website",
+    locale: "sq_AL",
+    siteName: "Smart Parking Prizren",
+    title: "Smart Parking Prizren — Gjej vendparkim në kohë reale",
+    description:
+      "Gjej vendparkime të lira në Prizren, rezervo vendparkim dhe menaxho sesionin tënd të parkimit në kohë reale.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Smart Parking Prizren — Gjej vendparkim në kohë reale",
+    description:
+      "Gjej vendparkime të lira në Prizren, rezervo vendparkim dhe menaxho sesionin tënd të parkimit në kohë reale.",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -32,8 +51,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-screen flex-col">
         <ThemeProvider>
           <QueryProvider>
+            <a href="#main-content" className="skip-link rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">
+              Kalo te përmbajtja
+            </a>
             <Header />
-            <div className="flex flex-1 flex-col">{children}</div>
+            <div id="main-content" className="flex flex-1 flex-col">
+              {children}
+            </div>
             <Footer />
             <Toaster />
           </QueryProvider>

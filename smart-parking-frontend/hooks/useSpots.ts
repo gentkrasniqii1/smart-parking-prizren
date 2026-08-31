@@ -4,6 +4,7 @@ import {
   deleteSpot,
   getSpots,
   updateSpotStatus,
+  updateSpotStatusAsAttendant,
 } from "@/lib/spots";
 import type { GeoPoint, SpotStatus } from "@/lib/types";
 
@@ -38,6 +39,19 @@ export function useUpdateSpotStatus() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["spots"] });
       void queryClient.invalidateQueries({ queryKey: ["admin", "auditLogs"] });
+    },
+  });
+}
+
+/** Ndryshim statusi nga paneli i rojtarit — endpoint i ngushtë `/spots/:id/status`
+ * (lejohet admin+attendant), jo PATCH-i i plotë i spotit. */
+export function useUpdateSpotStatusAsAttendant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: SpotStatus }) =>
+      updateSpotStatusAsAttendant(id, status),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["spots"] });
     },
   });
 }

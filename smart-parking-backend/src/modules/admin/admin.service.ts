@@ -18,6 +18,21 @@ export interface SystemHealth {
   sensorSimulator: { enabled: boolean };
 }
 
+export type AlertLevel = 'critical' | 'warning' | 'info';
+
+export interface AdminAlert {
+  id: string;
+  level: AlertLevel;
+  title: string;
+  message: string;
+  href: string | null;
+  timestamp: string;
+}
+
+const ZONE_OCCUPANCY_CRITICAL = 0.9;
+const ZONE_OCCUPANCY_WARNING = 0.75;
+const ZONE_MIN_SPOTS_FOR_ALERT = 3;
+
 export interface AdminStats {
   totalZones: number;
   totalSpots: number;
@@ -88,6 +103,102 @@ export class AdminService {
         enabled: process.env.SENSOR_SIMULATOR_ENABLED !== 'false',
       },
     };
+  }
+
+  // Alarme të nxjerra nga të dhëna REALE (jo të ruajtura/të simuluara) —
+  // rillogariten në çdo thirrje, prandaj s'kanë nevojë për "acknowledge"/DB
+  // të veçantë; niveli (critical/warning/info) përcaktohet nga pragjet më
+  // poshtë. §59 e promptit kërkon shprehimisht që klikimi i alarmit të çojë
+  // te entiteti përkatës.
+  async getAlerts(): Promise<AdminAlert[]> {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+    const [spotGroups, zones, recentReservations, health] = await Promise.all([
+      this.prisma.parkingSpot.groupBy({ by: ['zoneId', 'status'], _count: true }),
+      this.prisma.parkingZone.findMany({ select: { id: true, name: true } }),
+      this.prisma.reservation.count({
+        where: { createdAt: { gte: oneHourAgo } },
+      }),
+      this.getSystemHealth(),
+    ]);
+
+    const zoneNameById = new Map(zones.map((z) => [z.id, z.name]));
+    const totalsByZone = new Map<string, { total: number; occupied: number }>();
+    for (const group of spotGroups) {
+      const entry = totalsByZone.get(group.zoneId) ?? { total: 0, occupied: 0 };
+      entry.total += group._count;
+      if (group.status === 'occupied') {
+        entry.occupied += group._count;
+      }
+      totalsByZone.set(group.zoneId, entry);
+    }
+
+    const alerts: AdminAlert[] = [];
+
+    for (const [zoneId, { total, occupied }] of totalsByZone) {
+      if (total < ZONE_MIN_SPOTS_FOR_ALERT) {
+        continue;
+      }
+      const rate = occupied / total;
+      const zoneName = zoneNameById.get(zoneId) ?? 'Zonë e panjohur';
+      const percent = Math.round(rate * 100);
+      if (rate >= ZONE_OCCUPANCY_CRITICAL) {
+        alerts.push({
+          id: `zone-occupancy-${zoneId}`,
+          level: 'critical',
+          title: `Zona "${zoneName}" pothuajse plot`,
+          message: `${percent}% e vendparkimeve janë të zëna (${occupied}/${total}).`,
+          href: '/admin/zones',
+          timestamp: now.toISOString(),
+        });
+      } else if (rate >= ZONE_OCCUPANCY_WARNING) {
+        alerts.push({
+          id: `zone-occupancy-${zoneId}`,
+          level: 'warning',
+          title: `Zona "${zoneName}" me shkallë të lartë zënieje`,
+          message: `${percent}% e vendparkimeve janë të zëna (${occupied}/${total}).`,
+          href: '/admin/zones',
+          timestamp: now.toISOString(),
+        });
+      }
+    }
+
+    if (health.database.status === 'error') {
+      alerts.push({
+        id: 'system-health-database',
+        level: 'critical',
+        title: 'Baza e të dhënave s\'përgjigjet',
+        message: 'Kontrolli i fundit i shëndetit dështoi për bazën e të dhënave.',
+        href: '/admin/system-health',
+        timestamp: now.toISOString(),
+      });
+    }
+    if (health.redis.status === 'error') {
+      alerts.push({
+        id: 'system-health-redis',
+        level: 'critical',
+        title: 'Redis s\'përgjigjet',
+        message:
+          'Përditësimet live (statuse spotesh, njoftime) mund të mos funksionojnë.',
+        href: '/admin/system-health',
+        timestamp: now.toISOString(),
+      });
+    }
+
+    if (recentReservations > 0) {
+      alerts.push({
+        id: 'reservations-last-hour',
+        level: 'info',
+        title: 'Aktivitet rezervimesh',
+        message: `${recentReservations} rezervime të reja në orën e fundit.`,
+        href: '/admin/audit-log',
+        timestamp: now.toISOString(),
+      });
+    }
+
+    const levelOrder: Record<AlertLevel, number> = { critical: 0, warning: 1, info: 2 };
+    return alerts.sort((a, b) => levelOrder[a.level] - levelOrder[b.level]);
   }
 
   private async checkLatency(

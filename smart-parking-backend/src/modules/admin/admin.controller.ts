@@ -24,6 +24,11 @@ export class AdminController {
     return this.adminService.getSystemHealth();
   }
 
+  @Get('alerts')
+  getAlerts() {
+    return this.adminService.getAlerts();
+  }
+
   @Get('analytics/heatmap')
   getHeatmap(@Query() query: AnalyticsQueryDto) {
     return this.adminService.getHeatmap(query.days ?? 7);

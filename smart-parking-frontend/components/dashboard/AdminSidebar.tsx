@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   BarChart3,
+  BellRing,
   LayoutDashboard,
   MapPin,
   PanelLeftClose,
@@ -54,6 +55,7 @@ const SECTIONS: NavSection[] = [
   {
     label: "Sistemi",
     items: [
+      { href: "/admin/alerts", label: "Alarmet", icon: BellRing },
       { href: "/admin/system-health", label: "Gjendja e sistemit", icon: Activity },
     ],
   },

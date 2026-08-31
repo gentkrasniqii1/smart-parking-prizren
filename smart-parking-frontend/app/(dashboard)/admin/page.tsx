@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useAdminStats } from "@/hooks/useAdminStats";
+import { useAdminAlerts } from "@/hooks/useAdminAlerts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LiveIndicator } from "@/components/realtime/LiveIndicator";
+import { cn } from "@/lib/utils";
 import type { SpotStatus } from "@/lib/types";
 
 const STATUS_LABELS: Record<SpotStatus, string> = {
@@ -14,7 +17,9 @@ const STATUS_LABELS: Record<SpotStatus, string> = {
 
 export default function AdminOverviewPage() {
   const statsQuery = useAdminStats(true);
+  const alertsQuery = useAdminAlerts(true);
   const data = statsQuery.data;
+  const alertCount = alertsQuery.data?.length ?? 0;
   const occupancyRate =
     data && data.totalSpots > 0
       ? Math.round((data.spotsByStatus.occupied / data.totalSpots) * 1000) / 10
@@ -30,13 +35,13 @@ export default function AdminOverviewPage() {
 
       <section className="flex flex-col gap-3">
         {statsQuery.isLoading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-7">
-            {Array.from({ length: 7 }).map((_, i) => (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-8">
+            {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-[58px] rounded-md" />
             ))}
           </div>
         ) : data ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-7">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-8">
             <StatCard label="Zona" value={data.totalZones} />
             <StatCard label="Spote" value={data.totalSpots} />
             <StatCard
@@ -52,6 +57,12 @@ export default function AdminOverviewPage() {
                 value={data.spotsByStatus[status]}
               />
             ))}
+            <StatCard
+              label="Alarme aktive"
+              value={alertsQuery.isLoading ? "…" : alertCount}
+              href="/admin/alerts"
+              alert={alertCount > 0}
+            />
           </div>
         ) : (
           <p className="text-destructive">S&apos;u ngarkuan dot statistikat.</p>
@@ -61,11 +72,41 @@ export default function AdminOverviewPage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="rounded-md border p-3">
-      <p className="text-2xl font-semibold tabular-nums">{value}</p>
+function StatCard({
+  label,
+  value,
+  href,
+  alert,
+}: {
+  label: string;
+  value: number | string;
+  href?: string;
+  alert?: boolean;
+}) {
+  const content = (
+    <>
+      <p
+        className={cn(
+          "text-2xl font-semibold tabular-nums",
+          alert && "text-status-occupied-fg",
+        )}
+      >
+        {value}
+      </p>
       <p className="text-xs text-muted-foreground">{label}</p>
-    </div>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="rounded-md border p-3 outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className="rounded-md border p-3">{content}</div>;
 }

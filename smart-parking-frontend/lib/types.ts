@@ -80,6 +80,17 @@ export interface ReservationWindow {
   endTime: string;
 }
 
+export type AlertLevel = "critical" | "warning" | "info";
+
+export interface AdminAlert {
+  id: string;
+  level: AlertLevel;
+  title: string;
+  message: string;
+  href: string | null;
+  timestamp: string;
+}
+
 export interface ServiceHealth {
   status: "ok" | "error";
   latencyMs: number | null;

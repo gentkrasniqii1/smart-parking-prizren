@@ -9,6 +9,8 @@ import { useParkingSocket } from "@/hooks/useParkingSocket";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatsCards, StatsCardsSkeleton } from "@/components/dashboard/StatsCards";
 import { MapFilters } from "@/components/dashboard/MapFilters";
+import { ConnectionBanner } from "@/components/realtime/ConnectionBanner";
+import { RelativeTime } from "@/components/realtime/RelativeTime";
 import { STATUS_LABELS } from "@/lib/status-colors";
 import type { Spot, SpotStatus } from "@/lib/types";
 
@@ -59,16 +61,28 @@ export default function PublicMapPage() {
 
   const isLoading = zonesQuery.isLoading || spotsQuery.isLoading;
   const isError = zonesQuery.isError || spotsQuery.isError;
+  const lastUpdateAt = spotsQuery.dataUpdatedAt
+    ? new Date(spotsQuery.dataUpdatedAt)
+    : null;
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:p-8">
-      <div>
-        <h1 className="text-2xl font-semibold">Smart Parking Prizren</h1>
-        <p className="text-muted-foreground">
-          Zonat dhe vendparkimet e Prizrenit — statuset përditësohen në kohë
-          reale.
-        </p>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Smart Parking Prizren</h1>
+          <p className="text-muted-foreground">
+            Zonat dhe vendparkimet e Prizrenit — statuset përditësohen në kohë
+            reale.
+          </p>
+        </div>
+        {lastUpdateAt && (
+          <p className="text-xs text-muted-foreground sm:pt-1">
+            Përditësuar: <RelativeTime date={lastUpdateAt} />
+          </p>
+        )}
       </div>
+
+      <ConnectionBanner lastUpdateAt={lastUpdateAt} />
 
       {isLoading ? (
         <StatsCardsSkeleton />

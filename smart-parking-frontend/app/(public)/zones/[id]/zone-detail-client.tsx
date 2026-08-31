@@ -9,6 +9,7 @@ import { useActiveSession, useCheckIn, useCheckOut } from "@/hooks/useSessions";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConnectionBanner } from "@/components/realtime/ConnectionBanner";
 import { ReserveSpotForm } from "./reserve-spot-form";
 import type { Spot } from "@/lib/types";
 import { STATUS_LABELS } from "@/lib/status-colors";
@@ -47,10 +48,15 @@ export function ZoneDetailClient({ zoneId }: { zoneId: string }) {
 
   const spots = spotsQuery.data ?? [];
   const activeSpotId = activeSessionQuery.data?.spot.id ?? null;
+  const lastUpdateAt = spotsQuery.dataUpdatedAt
+    ? new Date(spotsQuery.dataUpdatedAt)
+    : null;
 
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold">{zoneQuery.data.name}</h1>
+
+      <ConnectionBanner lastUpdateAt={lastUpdateAt} />
 
       <ParkingMap zones={[zoneQuery.data]} spots={spots} height="50vh" />
 

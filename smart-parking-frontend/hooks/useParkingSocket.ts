@@ -38,10 +38,34 @@ export function useParkingSocket(
 
     const socket = getSocket();
     socket.connect();
+    let hasConnectedBefore = socket.connected;
 
-    for (const zoneId of zoneIds) {
-      socket.emit("zone:join", { zoneId });
+    function joinZones() {
+      for (const zoneId of zoneIds) {
+        socket.emit("zone:join", { zoneId });
+      }
     }
+
+    // Socket.io rithemelon lidhjen (dhe me të, room-at anësore te serveri —
+    // s'ka gjendje të ruajtur mes lidhjesh) pas çdo shkëputje/rilidhje —
+    // pa e ripërsëritur "zone:join" këtu, klienti do të vazhdonte të tregonte
+    // "● Live" (shih LiveIndicator) por s'do të merrte më `spot:update` fare
+    // për zonat e veta. Në rilidhje (jo lidhjen e parë) rifreskohen edhe vetë
+    // query-t (zones+spots) — mund të kenë humbur ngjarje ndërkohë që ishim
+    // shkëputur (§74: kurrë mos trego të dhëna të vjetruara si "live").
+    function handleConnect() {
+      joinZones();
+      if (hasConnectedBefore) {
+        void queryClient.invalidateQueries({ queryKey: ["zones"] });
+        void queryClient.invalidateQueries({ queryKey: ["spots"] });
+      }
+      hasConnectedBefore = true;
+    }
+
+    if (socket.connected) {
+      joinZones();
+    }
+    socket.on("connect", handleConnect);
 
     function handleSpotUpdate(updated: Spot) {
       queryClient.setQueryData<Spot[]>(["spots", "all"], (old) =>
@@ -56,6 +80,7 @@ export function useParkingSocket(
     socket.on("spot:update", handleSpotUpdate);
 
     return () => {
+      socket.off("connect", handleConnect);
       socket.off("spot:update", handleSpotUpdate);
       for (const zoneId of zoneIds) {
         socket.emit("zone:leave", { zoneId });

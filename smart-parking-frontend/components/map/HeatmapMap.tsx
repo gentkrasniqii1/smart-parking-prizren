@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { Map as MapGL, Source, Layer } from "react-map-gl/maplibre";
 import type { FeatureCollection, Point } from "geojson";
-import type { LngLatBoundsLike } from "maplibre-gl";
+import type { LngLatBoundsLike, Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { HeatmapResponse } from "@/lib/types";
 import { BASEMAP_STYLE } from "@/lib/map-style";
@@ -67,12 +67,30 @@ export function HeatmapMap({ data, height = "360px" }: HeatmapMapProps) {
     [data],
   );
 
+  // Rrjetë sigurie për `initialViewState={{bounds}}` (lexohet vetëm një herë,
+  // në montim): nëse harta ngarkohet pasi kontejneri ka marrë përmasat e veta,
+  // rifitohen bounds-et në mënyrë eksplicite. Përdor instancën nga vetë eventi
+  // (`e.target`), jo një `ref`, që të mos varet nga radha e caktimit të ref-it.
+  // SHËNIM: te browser-i i sandbox-uar i testimit ky event `load` NUK arrin
+  // kurrë të lëshohet (kufizim i dokumentuar te §8 Faza 2) — prandaj ky rrugë
+  // s'u dot verifikua këtu; në browser real ajo është thjesht mbrojtje shtesë
+  // mbi sjelljen ekzistuese, jo zëvendësim i saj.
+  const handleLoad = useCallback(
+    (event: { target: MapLibreMap }) => {
+      if (bounds) {
+        event.target.fitBounds(bounds, { padding: 48, duration: 0 });
+      }
+    },
+    [bounds],
+  );
+
   return (
     <div
       style={{ height, width: "100%" }}
       className="relative overflow-hidden rounded-lg border"
     >
       <MapGL
+        onLoad={handleLoad}
         initialViewState={
           bounds
             ? { bounds, fitBoundsOptions: { padding: 48 } }

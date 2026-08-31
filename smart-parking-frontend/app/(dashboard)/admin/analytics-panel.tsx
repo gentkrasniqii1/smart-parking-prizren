@@ -1,22 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import dynamic from "next/dynamic";
 import { useHeatmap, usePeakHours } from "@/hooks/useAnalytics";
-import { HeatmapMap } from "@/components/map/HeatmapMap";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// §43 "Lazy load heavy admin modules": maplibre-gl (~960KB) dhe recharts
+// (~356KB) janë 2 chunk-et më të mëdha të gjithë aplikacionit, dhe përdoren
+// VETËM këtu (+harta publike për maplibre). Me import statik ato shkarkoheshin
+// sapo hapej `/admin/analytics`, edhe para se të mbërrinin të dhënat. Të dyja
+// janë client-only (maplibre kërkon WebGL/window; recharts mat DOM-in),
+// prandaj `ssr: false` s'humb asgjë — dhe `loading` ripërdor SAKTËSISHT të
+// njëjtin Skeleton që faqja tregonte tashmë gjatë fetch-it, kështu që UX-i
+// mbetet identik.
+const HeatmapMap = dynamic(
+  () => import("@/components/map/HeatmapMap").then((m) => m.HeatmapMap),
+  { ssr: false, loading: () => <Skeleton className="h-[360px] w-full" /> },
+);
+
+const PeakHoursChart = dynamic(() => import("./peak-hours-chart"), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[360px] w-full" />,
+});
+
 const DAY_OPTIONS = [7, 14, 30];
-const CHART_HEIGHT_PX = 280;
 
 export function AnalyticsPanel() {
   const [days, setDays] = useState(7);
@@ -62,48 +70,7 @@ export function AnalyticsPanel() {
           {peakHoursQuery.isLoading ? (
             <Skeleton className="h-[360px] w-full" />
           ) : peakHoursQuery.data ? (
-            <div className="rounded-xl border p-3">
-              <ResponsiveContainer width="100%" height={CHART_HEIGHT_PX}>
-                <BarChart data={peakHoursQuery.data}>
-                  <CartesianGrid
-                    vertical={false}
-                    stroke="var(--color-border)"
-                  />
-                  <XAxis
-                    dataKey="hour"
-                    tickFormatter={(hour: number) => `${hour}`}
-                    tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }}
-                    tickLine={false}
-                    axisLine={{ stroke: "var(--color-border)" }}
-                    interval={1}
-                  />
-                  <YAxis
-                    allowDecimals={false}
-                    tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={28}
-                  />
-                  <Tooltip
-                    cursor={{ fill: "var(--color-muted)" }}
-                    contentStyle={{
-                      background: "var(--color-popover)",
-                      color: "var(--color-popover-foreground)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: "var(--radius-md)",
-                      fontSize: 12,
-                    }}
-                    labelFormatter={(hour) => `Ora ${hour}:00`}
-                    formatter={(value) => [value, "Aktivitete"]}
-                  />
-                  <Bar
-                    dataKey="count"
-                    fill="var(--color-chart-1)"
-                    radius={[3, 3, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <PeakHoursChart data={peakHoursQuery.data} />
           ) : (
             <p className="text-destructive">
               S&apos;u ngarkuan dot orët e pikut.

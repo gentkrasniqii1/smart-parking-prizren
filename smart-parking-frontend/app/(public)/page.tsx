@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import { ParkingMap } from "@/components/map/ParkingMap";
 import { useZones } from "@/hooks/useZones";
 import { useSpots } from "@/hooks/useSpots";
@@ -11,8 +10,7 @@ import { StatsCards, StatsCardsSkeleton } from "@/components/dashboard/StatsCard
 import { MapFilters } from "@/components/dashboard/MapFilters";
 import { ConnectionBanner } from "@/components/realtime/ConnectionBanner";
 import { RelativeTime } from "@/components/realtime/RelativeTime";
-import { STATUS_LABELS } from "@/lib/status-colors";
-import type { Spot, SpotStatus } from "@/lib/types";
+import type { SpotStatus } from "@/lib/types";
 
 const ALL_STATUSES = new Set<SpotStatus>([
   "free",
@@ -32,11 +30,14 @@ export default function PublicMapPage() {
     [zonesQuery.data],
   );
 
-  function handleSpotUpdate(spot: Spot) {
-    toast(`Spoti ${spot.code} tani është ${STATUS_LABELS[spot.status]}`);
-  }
-
-  useParkingSocket(zoneIds, handleSpotUpdate);
+  // ASNJË toast për `spot:update`: më parë çdo ndryshim statusi nxirrte një
+  // toast, dhe meqë sensor-simulator-i ndryshon 1-2 spote çdo 8s, kjo matej
+  // realisht në ~14 toast/minutë (~840/orë) për një përdorues që thjesht rri
+  // te harta — pikërisht ajo që §49 ndalon ("mos bëj toast për çdo ngjarje të
+  // vogël"), plus mount/unmount i vazhdueshëm komponentësh. Reagimi vizual
+  // ekziston tashmë dhe është më i mirë: marker-i i spotit bën "flash" te
+  // ParkingMap dhe kartat e statistikave rifreskohen vetë.
+  useParkingSocket(zoneIds);
 
   function toggleStatus(status: SpotStatus) {
     setStatuses((current) => {
